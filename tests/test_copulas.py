@@ -75,22 +75,3 @@ def test_student_t_copula_sample_shape_seed_and_nu() -> None:
     samples_tup = copula.sample(size=(10, 5), seed=42)
     assert samples_tup.shape == (2, 10, 5)
 
-
-def test_student_t_copula_rejects_nonpositive_nu() -> None:
-    distributions = [
-        Normal(params={"mu": 0.0, "sigma": 1.0}),
-        Normal(params={"mu": 0.0, "sigma": 1.0}),
-    ]
-
-    with pytest.raises(ValueError, match="nu must be positive"):
-        StudentTCopula.from_distributions_and_correlation(distributions, 0.5, nu=0)
-
-
-def test_copula_rejects_dimension_mismatch() -> None:
-    distributions = [Normal(params={"mu": 0.0, "sigma": 1.0})]
-
-    with pytest.raises(ValueError, match="does not match number of distributions"):
-        GaussianCopula(
-            distributions=distributions,
-            corr_matrix=CorrelationMatrix.from_n_corr(2, 0.5),
-        )

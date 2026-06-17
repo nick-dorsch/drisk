@@ -109,6 +109,11 @@ profit.correlate(correlation_matrix)
 ```
 
 ```{python}
+profit.copula.corr_matrix.plot(labels=[dist.name for dist in profit.distributions()])
+plt.show()
+```
+
+```{python}
 correlated_samples = profit.sample(size=50_000, seed=42)
 correlated_summary = profit.summary(threshold=0)
 correlated_summary

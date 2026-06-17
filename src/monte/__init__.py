@@ -1,5 +1,6 @@
 """Convenient tools for quick Monte Carlo modelling."""
 
+from . import _style as _style
 from .copulas import Copula, GaussianCopula, StudentTCopula
 from .correlations import CorrelationMatrix
 from .distributions import (

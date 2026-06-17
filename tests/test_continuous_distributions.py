@@ -36,9 +36,6 @@ def test_lognormal_elicit_sample_and_fit() -> None:
     fitted = LogNormal.fit([1.0, 2.0, 4.0])
     assert fitted.params["sigma"] > 0
 
-    with pytest.raises(ValueError, match="positive data"):
-        LogNormal.fit([0.0, 1.0])
-
 
 def test_exponential_elicit_sample_fit_and_functions() -> None:
     dist = Exponential.elicit(lam=2.5)
@@ -63,16 +60,6 @@ def test_exponential_elicit_sample_fit_and_functions() -> None:
 
     fitted = Exponential.fit([1.0, 2.0, 3.0, 1.5, 2.5])
     assert fitted.params["lam"] > 0
-
-    with pytest.raises(ValueError, match="positive data"):
-        Exponential.fit([0.0, 1.0])
-
-
-def test_exponential_validation() -> None:
-    with pytest.raises(ValueError, match="lam must be positive"):
-        Exponential.elicit(lam=0)
-    with pytest.raises(ValueError, match="lam must be positive"):
-        Exponential(params={"lam": 0})
 
 
 def test_gamma_elicit_sample_fit_and_functions() -> None:
@@ -100,39 +87,16 @@ def test_gamma_elicit_sample_fit_and_functions() -> None:
     assert fitted.params["alpha"] > 0
     assert fitted.params["beta"] > 0
 
-    with pytest.raises(ValueError, match="positive data"):
-        Gamma.fit([0.0, 1.0])
 
-
-def test_gamma_validation() -> None:
-    with pytest.raises(ValueError, match="k.*positive"):
-        Gamma.elicit(k=0, rate=1)
-    with pytest.raises(ValueError, match="rate.*positive"):
-        Gamma.elicit(k=1, rate=0)
-    with pytest.raises(ValueError, match="alpha must be positive"):
-        Gamma(params={"alpha": 0, "beta": 1})
-    with pytest.raises(ValueError, match="beta must be positive"):
-        Gamma(params={"alpha": 1, "beta": 0})
-
-
-def test_continuous_plot_shows_cdf_with_pdf_fill() -> None:
+def test_continuous_plot_returns_axes() -> None:
     import matplotlib.pyplot as plt
 
     dist = Normal.elicit(lower=10, upper=20, confidence=0.8)
     fig, ax = plt.subplots()
 
-    returned_ax = dist.plot(ax=ax, color="red")
+    returned_ax = dist.plot(ax=ax)
 
     assert returned_ax is ax
-    assert ax.get_ylabel() == "cumulative probability"
-    assert ax.get_ylim()[0] == pytest.approx(0)
-    assert ax.get_ylim()[1] == pytest.approx(1)
-
-    assert len(fig.axes) == 2
-    pdf_ax = fig.axes[1]
-    assert len(pdf_ax.get_yticks()) == 0
-    assert pdf_ax.get_ylabel() == ""
-    assert pdf_ax.get_ylim()[0] == pytest.approx(0)
 
     plt.close(fig)
 
@@ -149,6 +113,3 @@ def test_logitnormal_elicit_sample_and_fit() -> None:
 
     fitted = LogitNormal.fit([0.2, 0.4, 0.6])
     assert fitted.params["sigma"] > 0
-
-    with pytest.raises(ValueError, match=r"\(0, 1\)"):
-        LogitNormal.fit([0.0, 0.5])

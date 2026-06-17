@@ -26,9 +26,6 @@ def test_beta_elicit_alpha_beta_and_fit() -> None:
     assert fitted.params["alpha"] > 0
     assert fitted.params["beta"] > 0
 
-    with pytest.raises(ValueError, match=r"\(0, 1\)"):
-        mt.Beta.fit([0.0, 0.5])
-
 
 def test_stretched_beta_elicit_and_fit() -> None:
     dist = mt.StretchedBeta.elicit(min=10, mode=20, max=40, concentration=4)

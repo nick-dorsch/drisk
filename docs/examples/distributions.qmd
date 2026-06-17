@@ -26,20 +26,20 @@ expert might say that a typical delivery time is expected to fall between 8 and 
 with 80% confidence.
 
 ```{python}
-elicited = mt.LogNormal.elicit(
+delivery_days = mt.LogNormal.elicit(
     lower=8,
     upper=14,
     confidence=0.8,
     name="Delivery time, days",
 )
 
-elicited
+delivery_days
 ```
 
 The original elicitation inputs are stored alongside the fitted distribution parameters.
 
 ```{python}
-elicited.params, elicited.elicitation_params
+delivery_days.params, delivery_days.elicitation_params
 ```
 
 ## Sample from a distribution
@@ -48,7 +48,7 @@ Use `.sample()` to draw values for a simulation. Pass a `seed` when you want rep
 examples or tests.
 
 ```{python}
-samples = elicited.sample(size=10_000, seed=42)
+samples = delivery_days.sample(size=10_000, seed=42)
 samples[:5]
 ```
 
@@ -62,7 +62,7 @@ Use `.plot()` to inspect the distribution before putting it into a model. The pl
 the CDF with a lightly shaded PDF on a secondary axis.
 
 ```{python}
-elicited.plot(color="steelblue")
+delivery_days.plot(color="steelblue")
 plt.show()
 ```
 

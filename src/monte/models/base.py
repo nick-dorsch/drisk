@@ -226,6 +226,7 @@ class MCModel(ArithmeticMixin):
         refresh: bool = False,
         bins: int | str = 80,
         show: bool = False,
+        x_quantile_range: tuple[float, float] | None = (0.001, 0.999),
         ecdf_kwargs: dict[str, Any] | None = None,
         hist_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
@@ -235,8 +236,10 @@ class MCModel(ArithmeticMixin):
 
         Returns the primary Matplotlib ``Axes`` object. Extra keyword arguments
         are passed to the ECDF line for convenient calls like
-        ``model.plot(color="steelblue")``. Cached samples are reused by default
-        when available.
+        ``model.plot(color="steelblue")``. By default, the x-axis is limited to
+        the 0.001 and 0.999 sample quantiles; pass ``x_quantile_range=None`` to
+        show the full sampled range or another ``(low, high)`` quantile pair to
+        customize it. Cached samples are reused by default when available.
         """
         if ax is None:
             import matplotlib.pyplot as plt
@@ -258,6 +261,9 @@ class MCModel(ArithmeticMixin):
             **(hist_kwargs or {}),
         }
         hist_ax.hist(samples, bins=bins, **fill_kwargs)
+
+        if x_quantile_range is not None:
+            ax.set_xlim(*np.quantile(samples, x_quantile_range))
 
         ax.set_xlabel(self.name or "value")
         ax.set_ylabel("cumulative probability")

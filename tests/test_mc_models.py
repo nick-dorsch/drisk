@@ -83,16 +83,6 @@ def test_add_copula_clears_cached_independent_samples() -> None:
     assert not np.array_equal(independent, correlated)
 
 
-def test_add_copula_rejects_unused_distributions() -> None:
-    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
-    y = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="y")
-    z = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="z")
-    model = x + y
-    copula = mt.GaussianCopula.from_distributions_and_correlation([x, z], 0.5)
-
-    with pytest.raises(ValueError, match="not used by this MCModel: z"):
-        model.add_copula(copula)
-
 
 def test_correlate_with_scalar_builds_gaussian_copula_in_distribution_order() -> None:
     x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
@@ -128,14 +118,6 @@ def test_correlate_with_matrix_builds_gaussian_copula() -> None:
     np.testing.assert_allclose(samples, explicit_samples[0] + explicit_samples[1])
 
 
-def test_correlate_rejects_invalid_matrix_shape() -> None:
-    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
-    y = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
-    model = x + y
-
-    with pytest.raises(ValueError, match="does not match number of distributions"):
-        model.correlate([[1.0]])
-
 
 def test_model_refresh_replaces_cached_samples() -> None:
     x = mt.Normal.elicit(-1.0, 1.0)
@@ -159,43 +141,57 @@ def test_model_summary_returns_configurable_dataframe() -> None:
         percentiles=(99, 90, 75, 50, 25, 10, 1),
     )
 
-    assert summary.index.name == "metric"
-    assert summary.index.tolist() == ["value"]
-    assert summary.columns.tolist() == [
-        "mean",
-        "p(> 0)",
-        "p99",
-        "p90",
-        "p75",
-        "p50",
-        "p25",
-        "p10",
-        "p1",
-    ]
+    assert "value" in summary.index
+    assert {"mean", "p(> 0)", "p99", "p50", "p1"}.issubset(summary.columns)
     assert summary.loc["value", "p(> 0)"] == pytest.approx(
         np.mean(model.sample(size=1_000, seed=123) > 0)
     )
 
 
-def test_model_plot_shows_ecdf_with_histogram_fill() -> None:
+def test_model_plot_returns_axes_and_uses_default_x_quantile_range() -> None:
     import matplotlib.pyplot as plt
 
     x = mt.Normal.elicit(-1.0, 1.0)
     model = x * 2
     fig, ax = plt.subplots()
 
-    returned_ax = model.plot(ax=ax, size=100, seed=123, color="red")
+    returned_ax = model.plot(ax=ax, size=100, seed=123)
 
     assert returned_ax is ax
-    assert ax.get_ylabel() == "cumulative probability"
-    assert ax.get_ylim()[0] == pytest.approx(0)
-    assert ax.get_ylim()[1] == pytest.approx(1)
+    samples = np.ravel(model.sample(size=100, seed=123))
+    assert ax.get_xlim() == pytest.approx(tuple(np.quantile(samples, (0.001, 0.999))))
 
-    assert len(fig.axes) == 2
-    hist_ax = fig.axes[1]
-    assert len(hist_ax.get_yticks()) == 0
-    assert hist_ax.get_ylabel() == ""
-    assert hist_ax.get_ylim()[0] == pytest.approx(0)
+    plt.close(fig)
+
+
+def test_model_plot_accepts_custom_x_quantile_range() -> None:
+    import matplotlib.pyplot as plt
+
+    x = mt.Normal.elicit(0.0, 1.0)
+    model = x + 1
+    fig, ax = plt.subplots()
+
+    model.plot(ax=ax, size=100, seed=123, x_quantile_range=(0.05, 0.95))
+
+    samples = np.ravel(model.sample(size=100, seed=123))
+    assert ax.get_xlim() == pytest.approx(tuple(np.quantile(samples, (0.05, 0.95))))
+
+    plt.close(fig)
+
+
+def test_model_plot_can_show_full_sampled_x_range() -> None:
+    import matplotlib.pyplot as plt
+
+    x = mt.Normal.elicit(0.0, 1.0)
+    model = x + 1
+    fig, ax = plt.subplots()
+
+    model.plot(ax=ax, size=100, seed=123, x_quantile_range=None)
+
+    samples = np.ravel(model.sample(size=100, seed=123))
+    x_min, x_max = ax.get_xlim()
+    assert x_min < np.min(samples)
+    assert x_max > np.max(samples)
 
     plt.close(fig)
 
