@@ -1,0 +1,96 @@
+---
+title: "Working with Distributions"
+subtitle: "Elicit, fit, plot, and sample"
+---
+
+## Overview
+
+Every concrete `monte` distribution exposes the same small API:
+
+- `elicit(...)` constructs a distribution from expert-provided inputs,
+- `fit(data, ...)` estimates distribution parameters from observations,
+- `plot(...)` gives a quick visual check of the shape, and
+- `sample(...)` generates Monte Carlo draws.
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+import monte as mt
+```
+
+## Elicit from expert judgement
+
+Elicitation is useful when you have estimates rather than raw data. For example, an
+expert might say that a typical delivery time is expected to fall between 8 and 14 days
+with 80% confidence.
+
+```{python}
+elicited = mt.Normal.elicit(
+    lower=8,
+    upper=14,
+    confidence=0.8,
+    name="Delivery time, days",
+)
+
+elicited
+```
+
+The original elicitation inputs are stored alongside the fitted distribution parameters.
+
+```{python}
+elicited.params, elicited.elicitation_params
+```
+
+## Sample from a distribution
+
+Use `.sample()` to draw values for a simulation. Pass a `seed` when you want reproducible
+examples or tests.
+
+```{python}
+samples = elicited.sample(size=10_000, seed=42)
+samples[:5]
+```
+
+```{python}
+np.mean(samples), np.percentile(samples, [10, 50, 90])
+```
+
+## Plot a quicklook chart
+
+Use `.plot()` to inspect the distribution before putting it into a model. The plot shows
+the CDF with a lightly shaded PDF on a secondary axis.
+
+```{python}
+elicited.plot(color="steelblue")
+plt.show()
+```
+
+## Fit from observed data
+
+When observations are available, use `.fit()` instead. Here we create a small synthetic
+dataset and fit a normal distribution to it.
+
+```{python}
+rng = np.random.default_rng(7)
+observed = rng.normal(loc=10.5, scale=1.8, size=100)
+
+fitted = mt.Normal.fit(observed, name="Observed delivery time, days")
+fitted
+```
+
+```{python}
+fitted.params
+```
+
+You can use fitted distributions the same way as elicited distributions: plot them and
+sample from them in a Monte Carlo model.
+
+```{python}
+fitted.plot(color="darkorange")
+plt.show()
+```
+
+```{python}
+fitted.sample(size=5, seed=123)
+```

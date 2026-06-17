@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 import pandas as pd
 
 from monte.arithmetic import ArithmeticMixin
-from monte.distributions import Distribution
+from monte.copulas import Copula, GaussianCopula
+from monte.correlations import CorrelationMatrix
+from monte.distributions import ArrayLike, Distribution
 from monte.random import SeedLike, get_rng
 from monte.summary import percentile_label, threshold_probability_label
 
@@ -32,6 +34,7 @@ class MCModel(ArithmeticMixin):
     op: Operation
     operands: tuple[Operand, ...]
     name: str | None = None
+    copula: Copula | None = None
     _cached_samples: np.ndarray | None = field(default=None, init=False, repr=False)
     _cached_size: int | tuple[int, ...] | None = field(
         default=None,
@@ -83,6 +86,75 @@ class MCModel(ArithmeticMixin):
         self._cached_samples = None
         self._cached_size = None
         self._cached_seed = None
+
+    def distributions(self) -> tuple[Distribution, ...]:
+        """Return unique distribution leaves used by this model, in expression order."""
+        seen: set[tuple[type[Any], int]] = set()
+        collected: list[Distribution] = []
+        for operand in self.operands:
+            _collect_distributions(operand, seen=seen, collected=collected)
+        return tuple(collected)
+
+    def add_copula(self, copula: Copula) -> Self:
+        """
+        Attach a copula to this model for correlated sampling.
+
+        The copula is used by :meth:`sample`, :meth:`summary`, and :meth:`plot`.
+        Distributions covered by the copula are sampled jointly; model
+        distributions not included in the copula continue to be sampled
+        independently. The copula may only reference distributions that are
+        present in this model expression.
+        """
+        model_distribution_keys = {
+            (type(distribution), id(distribution))
+            for distribution in self.distributions()
+        }
+        unused = [
+            distribution
+            for distribution in copula.distributions
+            if (type(distribution), id(distribution)) not in model_distribution_keys
+        ]
+        if unused:
+            names = [
+                distribution.name or distribution.dist_type for distribution in unused
+            ]
+            raise ValueError(
+                "Copula contains distributions that are not used by this MCModel: "
+                + ", ".join(names)
+            )
+
+        self.copula = copula
+        self.clear_cache()
+        return self
+
+    def correlate(self, correlation: float | int | ArrayLike) -> Self:
+        """
+        Attach a Gaussian copula using this model's distribution leaves.
+
+        ``correlation`` may be a single off-diagonal correlation value or a full
+        correlation matrix. Matrix rows/columns are interpreted in the order
+        returned by :meth:`distributions`, i.e. first appearance in the model
+        expression.
+        """
+        distributions = self.distributions()
+        if not distributions:
+            raise ValueError("Cannot correlate an MCModel with no distributions")
+
+        if np.isscalar(correlation):
+            corr_matrix = CorrelationMatrix.from_n_corr(
+                len(distributions),
+                float(correlation),
+            )
+        else:
+            corr_matrix = CorrelationMatrix.from_numpy(
+                np.asarray(correlation, dtype=float)
+            )
+
+        copula = GaussianCopula(
+            distributions=distributions,
+            corr_matrix=corr_matrix,
+        )
+        return self.add_copula(copula)
 
     def _get_samples(
         self,
@@ -216,6 +288,8 @@ class MCModel(ArithmeticMixin):
         if key in cache:
             return cache[key]
 
+        self._populate_copula_cache(size=size, seed=seed, cache=cache)
+
         values = [
             _eval_operand(operand, size=size, seed=seed, cache=cache)
             for operand in self.operands
@@ -223,6 +297,52 @@ class MCModel(ArithmeticMixin):
         result = np.asarray(self.op(*values))
         cache[key] = result
         return result
+
+    def _populate_copula_cache(
+        self,
+        *,
+        size: int | tuple[int, ...],
+        seed: SeedLike,
+        cache: EvaluationCache,
+    ) -> None:
+        """Pre-fill distribution samples from this model's copula, if present."""
+        if self.copula is None:
+            return
+
+        distribution_keys = [
+            (type(distribution), id(distribution))
+            for distribution in self.copula.distributions
+        ]
+        if all(key in cache for key in distribution_keys):
+            return
+        if any(key in cache for key in distribution_keys):
+            raise RuntimeError(
+                "Cannot apply copula because some of its distributions have already "
+                "been sampled independently in this evaluation."
+            )
+
+        joint_samples = self.copula.sample(size=size, seed=seed)
+        for i, key in enumerate(distribution_keys):
+            cache[key] = np.asarray(joint_samples[i, ...])
+
+
+def _collect_distributions(
+    operand: Operand,
+    *,
+    seen: set[tuple[type[Any], int]],
+    collected: list[Distribution],
+) -> None:
+    """Collect unique distribution leaves from an operand tree."""
+    if isinstance(operand, MCModel):
+        for nested_operand in operand.operands:
+            _collect_distributions(nested_operand, seen=seen, collected=collected)
+        return
+
+    if isinstance(operand, Distribution):
+        key = (type(operand), id(operand))
+        if key not in seen:
+            seen.add(key)
+            collected.append(operand)
 
 
 def _eval_operand(

@@ -1,0 +1,163 @@
+---
+title: "Correlated Sampling with Copulas"
+subtitle: "Adding dependence to the product launch model"
+---
+
+## Motivation
+
+The composition example treated each uncertain input as independent. In many real models,
+inputs move together: a larger addressable market might also imply higher fixed launch
+costs, and price and unit cost may be positively related.
+
+`monte` lets you keep the same arithmetic expression and then attach correlated sampling
+to the resulting `MCModel`. The convenience method `.correlate(...)` builds a Gaussian
+copula over the model's distribution inputs.
+
+```{python}
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import monte as mt
+```
+
+## Build the same model
+
+We use the same elicited inputs and profit expression as the Monte Carlo composition
+example.
+
+```{python}
+market_size = mt.PERT.elicit(
+    min=20_000,
+    mode=50_000,
+    max=100_000,
+    name="Addressable market size",
+)
+
+conversion = mt.LogitNormal.elicit(
+    lower=0.02,
+    upper=0.08,
+    confidence=0.8,
+    name="Conversion rate",
+)
+
+price = mt.LogNormal.elicit(
+    lower=40,
+    upper=80,
+    confidence=0.8,
+    name="Average selling price",
+)
+
+unit_cost = mt.PERT.elicit(
+    min=12,
+    mode=18,
+    max=30,
+    name="Unit cost",
+)
+
+fixed_cost = mt.PERT.elicit(
+    min=100_000,
+    mode=150_000,
+    max=250_000,
+    name="Fixed launch cost",
+)
+
+profit = market_size * conversion * (price - unit_cost) - fixed_cost
+```
+
+Before adding correlations, the model's distribution leaves are sampled independently.
+
+```{python}
+independent_samples = profit.sample(size=50_000, seed=42)
+independent_summary = profit.summary(threshold=0)
+independent_summary
+```
+
+## Check distribution order
+
+A full correlation matrix is interpreted in the order returned by `.distributions()`:
+first appearance in the arithmetic expression.
+
+```{python}
+[dist.name for dist in profit.distributions()]
+```
+
+For this expression, the order is:
+
+1. addressable market size,
+2. conversion rate,
+3. average selling price,
+4. unit cost, and
+5. fixed launch cost.
+
+## Apply a correlation matrix
+
+Pass a full correlation matrix to `.correlate(...)`. Under the hood, `monte` creates a
+`GaussianCopula` for these marginal distributions and attaches it to the `MCModel`, so
+`.sample()`, `.summary()`, and `.plot()` all use correlated draws from that point on.
+
+```{python}
+correlation_matrix = [
+    [1.00, 0.45, 0.15, 0.20, 0.35],
+    [0.45, 1.00, 0.20, 0.10, 0.15],
+    [0.15, 0.20, 1.00, 0.60, 0.05],
+    [0.20, 0.10, 0.60, 1.00, 0.10],
+    [0.35, 0.15, 0.05, 0.10, 1.00],
+]
+
+profit.correlate(correlation_matrix)
+```
+
+```{python}
+correlated_samples = profit.sample(size=50_000, seed=42)
+correlated_summary = profit.summary(threshold=0)
+correlated_summary
+```
+
+## Compare independent and correlated runs
+
+```{python}
+comparison = pd.concat(
+    {
+        "independent": independent_summary.loc["value"],
+        "correlated": correlated_summary.loc["value"],
+    },
+    axis=1,
+).T
+comparison
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(8, 4.5))
+
+for label, samples, color in [
+    ("Independent", independent_samples, "#4C78A8"),
+    ("Correlated", correlated_samples, "#F58518"),
+]:
+    sorted_samples = np.sort(samples)
+    ecdf = np.arange(1, sorted_samples.size + 1) / sorted_samples.size
+    ax.plot(sorted_samples, ecdf, label=label, color=color)
+
+ax.axvline(0, color="black", linestyle="--", linewidth=1, label="Break-even")
+ax.set_title("Product launch profit: independent vs correlated sampling")
+ax.set_xlabel("Profit")
+ax.set_ylabel("cumulative probability")
+ax.set_ylim(0, 1)
+ax.legend()
+fig.tight_layout()
+plt.show()
+```
+
+## Scalar shortcut
+
+For quick sensitivity checks, pass a single number instead of a full matrix. This applies
+the same off-diagonal correlation to every pair of distribution inputs.
+
+```{python}
+quick_profit = market_size * conversion * (price - unit_cost) - fixed_cost
+quick_profit.correlate(0.25)
+quick_profit.summary(size=50_000, seed=42, threshold=0)
+```
+
+Use `.add_copula(...)` directly when you want to provide a specific copula object, such
+as a Student-t copula or a Gaussian copula constructed separately.

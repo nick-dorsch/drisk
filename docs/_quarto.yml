@@ -11,8 +11,12 @@ website:
         text: Home
       - text: Examples
         menu:
+          - href: examples/distributions.qmd
+            text: Working with distributions
           - href: examples/mc-composition.qmd
             text: Monte Carlo composition
+          - href: examples/correlated-sampling.qmd
+            text: Correlated sampling with copulas
   sidebar:
     style: docked
     contents:
@@ -20,12 +24,16 @@ website:
         text: Home
       - section: Examples
         contents:
+          - href: examples/distributions.qmd
+            text: Working with distributions
           - href: examples/mc-composition.qmd
             text: Monte Carlo composition
+          - href: examples/correlated-sampling.qmd
+            text: Correlated sampling with copulas
 
 format:
   html:
-    theme: cosmo
+    theme: flatly
     toc: true
     code-fold: false
     code-copy: true

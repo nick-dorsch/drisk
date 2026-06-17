@@ -46,6 +46,97 @@ def test_model_reuses_cached_samples_across_report_methods() -> None:
     assert summary.loc["value", "p(> 0)"] == pytest.approx(float(np.mean(samples > 0)))
 
 
+def test_model_distributions_returns_unique_leaves_in_expression_order() -> None:
+    x = mt.Normal.elicit(-1.0, 1.0, name="x")
+    y = mt.Normal.elicit(9.0, 11.0, name="y")
+
+    model = x + y * x
+
+    assert model.distributions() == (x, y)
+
+
+def test_add_copula_uses_joint_samples_for_model_evaluation() -> None:
+    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = mt.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
+    model = x + y
+    copula = mt.GaussianCopula.from_distributions_and_correlation([x, y], 0.75)
+
+    returned = model.add_copula(copula)
+    samples = model.sample(size=1_000, seed=123)
+    joint_samples = copula.sample(size=1_000, seed=123)
+    expected = joint_samples[0] + joint_samples[1]
+
+    assert returned is model
+    np.testing.assert_allclose(samples, expected)
+    assert np.corrcoef(joint_samples)[0, 1] == pytest.approx(0.75, abs=0.08)
+
+
+def test_add_copula_clears_cached_independent_samples() -> None:
+    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
+    y = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
+    model = x + y
+
+    independent = model.sample(size=100, seed=123)
+    copula = mt.GaussianCopula.from_distributions_and_correlation([x, y], 0.5)
+    correlated = model.add_copula(copula).sample(size=100, seed=123)
+
+    assert not np.array_equal(independent, correlated)
+
+
+def test_add_copula_rejects_unused_distributions() -> None:
+    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="y")
+    z = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="z")
+    model = x + y
+    copula = mt.GaussianCopula.from_distributions_and_correlation([x, z], 0.5)
+
+    with pytest.raises(ValueError, match="not used by this MCModel: z"):
+        model.add_copula(copula)
+
+
+def test_correlate_with_scalar_builds_gaussian_copula_in_distribution_order() -> None:
+    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = mt.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
+    z = mt.Normal(params={"mu": 20.0, "sigma": 3.0}, name="z")
+    model = x + y * z
+
+    returned = model.correlate(0.4)
+
+    assert returned is model
+    assert isinstance(model.copula, mt.GaussianCopula)
+    assert tuple(model.copula.distributions) == (x, y, z)
+    np.testing.assert_allclose(
+        model.copula.corr_matrix.to_numpy(),
+        np.array([[1.0, 0.4, 0.4], [0.4, 1.0, 0.4], [0.4, 0.4, 1.0]]),
+    )
+
+
+def test_correlate_with_matrix_builds_gaussian_copula() -> None:
+    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = mt.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
+    model = x + y
+    matrix = [[1.0, 0.7], [0.7, 1.0]]
+
+    model.correlate(matrix)
+    samples = model.sample(size=1_000, seed=123)
+    explicit_copula = mt.GaussianCopula(
+        distributions=[x, y],
+        corr_matrix=mt.CorrelationMatrix(matrix=matrix),
+    )
+    explicit_samples = explicit_copula.sample(size=1_000, seed=123)
+
+    np.testing.assert_allclose(samples, explicit_samples[0] + explicit_samples[1])
+
+
+def test_correlate_rejects_invalid_matrix_shape() -> None:
+    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
+    y = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
+    model = x + y
+
+    with pytest.raises(ValueError, match="does not match number of distributions"):
+        model.correlate([[1.0]])
+
+
 def test_model_refresh_replaces_cached_samples() -> None:
     x = mt.Normal.elicit(-1.0, 1.0)
     model = x * 2
