@@ -2,18 +2,18 @@
 
 from .base import UvDistribution
 from .continuous import (
+    PERT,
     Beta,
     LogitNormal,
     LogNormal,
     Normal,
-    PERT,
+    StretchedBeta,
     UvBoundedContinuous,
     UvContinuous,
     UvPositiveContinuous,
     UvRealContinuous,
     UvUnitBoundedContinuous,
 )
-from .types import UvContinuousType
 
 __all__ = [
     "Beta",
@@ -21,9 +21,9 @@ __all__ = [
     "LogNormal",
     "Normal",
     "PERT",
+    "StretchedBeta",
     "UvBoundedContinuous",
     "UvContinuous",
-    "UvContinuousType",
     "UvPositiveContinuous",
     "UvRealContinuous",
     "UvUnitBoundedContinuous",

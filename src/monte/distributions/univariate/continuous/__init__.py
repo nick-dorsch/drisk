@@ -7,36 +7,11 @@ from .base import (
     UvRealContinuous,
     UvUnitBoundedContinuous,
 )
-
-
-class _DistributionPendingImplementation:
-    """Placeholder for distributions whose implementations are not yet available."""
-
-    def __init__(self, *args: object, **kwargs: object) -> None:
-        raise NotImplementedError(
-            "This distribution has not been implemented yet."
-        )
-
-
-class Normal(_DistributionPendingImplementation):
-    pass
-
-
-class LogNormal(_DistributionPendingImplementation):
-    pass
-
-
-class LogitNormal(_DistributionPendingImplementation):
-    pass
-
-
-class Beta(_DistributionPendingImplementation):
-    pass
-
-
-class PERT(_DistributionPendingImplementation):
-    pass
-
+from .beta import Beta
+from .logitnormal import LogitNormal
+from .lognormal import LogNormal
+from .normal import Normal
+from .stretched_beta import PERT, StretchedBeta
 
 __all__ = [
     "Beta",
@@ -44,6 +19,7 @@ __all__ = [
     "LogNormal",
     "Normal",
     "PERT",
+    "StretchedBeta",
     "UvBoundedContinuous",
     "UvContinuous",
     "UvPositiveContinuous",

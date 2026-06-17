@@ -3,14 +3,14 @@
 from .base import Distribution
 from .types import ArrayLike, DataFrameLike
 from .univariate import (
+    PERT,
     Beta,
     LogitNormal,
     LogNormal,
     Normal,
-    PERT,
+    StretchedBeta,
     UvBoundedContinuous,
     UvContinuous,
-    UvContinuousType,
     UvDistribution,
     UvPositiveContinuous,
     UvRealContinuous,
@@ -26,9 +26,9 @@ __all__ = [
     "LogNormal",
     "Normal",
     "PERT",
+    "StretchedBeta",
     "UvBoundedContinuous",
     "UvContinuous",
-    "UvContinuousType",
     "UvDistribution",
     "UvPositiveContinuous",
     "UvRealContinuous",

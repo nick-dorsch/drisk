@@ -13,7 +13,6 @@ src/monte/
     types.py                 # shared typing helpers
     univariate/
       base.py                # univariate distribution interface
-      types.py               # univariate distribution discriminators
-      continuous/            # continuous domain interfaces + normal, lognormal, logitnormal, beta, PERT
+      continuous/            # continuous domain interfaces + normal, lognormal, logitnormal, beta, StretchedBeta, PERT
   random.py                  # seed/RNG helpers
 ```

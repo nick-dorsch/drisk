@@ -1,6 +1,7 @@
 """Convenient tools for quick Monte Carlo modelling."""
 
 from .distributions import (
+    PERT,
     ArrayLike,
     Beta,
     DataFrameLike,
@@ -8,10 +9,9 @@ from .distributions import (
     LogitNormal,
     LogNormal,
     Normal,
-    PERT,
+    StretchedBeta,
     UvBoundedContinuous,
     UvContinuous,
-    UvContinuousType,
     UvDistribution,
     UvPositiveContinuous,
     UvRealContinuous,
@@ -27,9 +27,9 @@ __all__ = [
     "LogNormal",
     "Normal",
     "PERT",
+    "StretchedBeta",
     "UvBoundedContinuous",
     "UvContinuous",
-    "UvContinuousType",
     "UvDistribution",
     "UvPositiveContinuous",
     "UvRealContinuous",
