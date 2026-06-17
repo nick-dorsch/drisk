@@ -4,6 +4,7 @@ project:
 
 website:
   title: "monte"
+  site-url: "https://nick-dorsch.github.io/monte/"
   description: "Examples and reports for composable Monte Carlo modelling with monte."
   navbar:
     left:
