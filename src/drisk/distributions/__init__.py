@@ -2,7 +2,6 @@
 
 from .base import Distribution
 from .mixture import UvMixture
-from .serializable import SerializableDistribution, SerializableUvDistribution
 from .types import ArrayLike, DataFrameLike
 from .univariate import (
     PERT,
@@ -29,6 +28,11 @@ from .univariate import (
     UvUnitBoundedContinuous,
 )
 
+# ``UvMixture.components`` is typed as ``UvDistribution``. During initial class
+# construction the concrete distribution registry is not complete, so rebuild the
+# model once all distribution implementations are imported.
+UvMixture.model_rebuild(force=True)
+
 __all__ = [
     "ArrayLike",
     "Bernoulli",
@@ -46,8 +50,6 @@ __all__ = [
     "Normal",
     "PERT",
     "Poisson",
-    "SerializableDistribution",
-    "SerializableUvDistribution",
     "StretchedBeta",
     "UvBoundedContinuous",
     "UvContinuous",

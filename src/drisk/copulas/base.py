@@ -8,7 +8,6 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from drisk.correlations import CorrelationMatrix
-from drisk.distributions.serializable import SerializableUvDistribution
 from drisk.distributions.univariate import UvDistribution
 from drisk.random import SeedLike
 
@@ -16,7 +15,7 @@ from drisk.random import SeedLike
 class Copula(BaseModel, ABC):
     """Base class for copulas that jointly sample marginal distributions."""
 
-    distributions: tuple[SerializableUvDistribution, ...]
+    distributions: tuple[UvDistribution, ...]
     corr_matrix: CorrelationMatrix
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")

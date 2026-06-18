@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 import drisk as dr
 
@@ -76,11 +76,15 @@ def test_nested_pydantic_objects_json_round_trip(obj: BaseModel) -> None:
 
 
 class DistributionHolder(BaseModel):
-    value: dr.SerializableDistribution
+    value: dr.Distribution
 
 
 class UvDistributionHolder(BaseModel):
-    value: dr.SerializableUvDistribution
+    value: dr.UvDistribution
+
+
+class UnitBoundedContinuousHolder(BaseModel):
+    value: dr.UvUnitBoundedContinuous
 
 
 class CopulaHolder(BaseModel):
@@ -92,6 +96,14 @@ class CopulaHolder(BaseModel):
     [
         (DistributionHolder, dr.Normal.elicit(0, 1)),
         (UvDistributionHolder, dr.Normal.elicit(0, 1)),
+        (
+            UvDistributionHolder,
+            dr.UvMixture.elicit(
+                (dr.Normal.elicit(0, 1), dr.Normal.elicit(10, 12)), (1, 2)
+            ),
+        ),
+        (UnitBoundedContinuousHolder, dr.Beta.elicit(alpha=2, beta=5)),
+        (UnitBoundedContinuousHolder, dr.LogitNormal.elicit(0.1, 0.3)),
         (
             CopulaHolder,
             dr.GaussianCopula.from_distributions_and_correlation(
@@ -110,6 +122,16 @@ def test_abstract_base_typed_fields_json_round_trip(
 
     assert type(restored.value) is type(value)
     assert restored.model_dump(mode="json") == holder.model_dump(mode="json")
+
+
+def test_domain_typed_distribution_field_rejects_incompatible_distribution() -> None:
+    with pytest.raises(ValidationError):
+        UnitBoundedContinuousHolder(value=dr.Normal.elicit(0, 1))
+
+    with pytest.raises(ValidationError):
+        UnitBoundedContinuousHolder.model_validate(
+            {"value": dr.Normal.elicit(0, 1).model_dump(mode="json")}
+        )
 
 
 def test_decision_tree_with_distribution_and_model_outcomes_json_round_trip() -> None:
