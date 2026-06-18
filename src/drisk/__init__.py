@@ -3,6 +3,15 @@
 from . import _style as _style
 from .copulas import Copula, GaussianCopula, StudentTCopula
 from .correlations import CorrelationMatrix
+from .decision import (
+    ChanceBranch,
+    ChanceNode,
+    DecisionBranch,
+    DecisionNode,
+    DTree,
+    DTreeNode,
+    OutcomeNode,
+)
 from .distributions import (
     PERT,
     ArrayLike,
@@ -38,10 +47,16 @@ __all__ = [
     "Bernoulli",
     "Beta",
     "Binomial",
+    "ChanceBranch",
+    "ChanceNode",
     "Copula",
     "CorrelationMatrix",
     "DataFrameLike",
+    "DecisionBranch",
+    "DecisionNode",
     "Distribution",
+    "DTree",
+    "DTreeNode",
     "Exponential",
     "GaussianCopula",
     "Gamma",
@@ -52,6 +67,7 @@ __all__ = [
     "UvMixture",
     "NegativeBinomial",
     "Normal",
+    "OutcomeNode",
     "PERT",
     "Poisson",
     "StudentTCopula",

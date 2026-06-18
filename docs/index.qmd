@@ -10,7 +10,8 @@ problems in quick scripts or notebooks, while also supporting more advanced meth
 heavier simulation workloads.
 
 `drisk` is in development, and currently supports univariate continuous and discrete
-distribution sampling, including correlated sampling using Copulas.
+distribution sampling, correlated sampling using Copulas, composable Monte Carlo
+models, and decision support workflows such as decision-tree rollback analysis.
 
 This documentation site collects runnable examples and report-style walkthroughs.
 
@@ -75,6 +76,8 @@ elicited distributions and ordinary Python arithmetic.
 univariate distributions for processes with distinct regimes.
 - [Correlated Sampling with Copulas](examples/correlated-sampling.qmd): the same product
 launch model with correlated input sampling.
+- [Decision Trees for Business Decisions](examples/decision-trees.qmd): rollback
+analysis for sequential business choices with uncertain outcomes.
 - [Composing Discrete and Continuous Distributions](examples/equipment-failures.qmd):
 an equipment-failure planning model combining a Poisson event count with continuous
 average repair cost and downtime distributions.
