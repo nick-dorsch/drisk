@@ -1,7 +1,7 @@
 import numpy as np
 
-from monte.distributions import ArrayLike, UvContinuous
-from monte.random import SeedLike
+from drisk.distributions import ArrayLike, UvContinuous
+from drisk.random import SeedLike
 
 
 class ToyDistribution(UvContinuous):

@@ -6,9 +6,9 @@ import numpy as np
 from pydantic import field_validator
 from scipy import stats
 
-from monte.distributions.types import ArrayLike
-from monte.distributions.univariate.continuous.base import UvBoundedContinuous
-from monte.random import SeedLike, get_scipy_random_state
+from drisk.distributions.types import ArrayLike
+from drisk.distributions.univariate.continuous.base import UvBoundedContinuous
+from drisk.random import SeedLike, get_scipy_random_state
 
 
 class StretchedBeta(UvBoundedContinuous):

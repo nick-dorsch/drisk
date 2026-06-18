@@ -1,16 +1,16 @@
-# monte
+# drisk
 
 Composable tools for quick Monte Carlo modelling, with an emphasis on distribution elicitation and model composition.
 
-Monte provides a compact, notebook-friendly API for probability distributions, elicitation workflows, and composable Monte Carlo models.
+Drisk provides a compact, notebook-friendly API for probability distributions, elicitation workflows, and composable Monte Carlo models.
 
 ## Usage
 
 ```python
-import monte as mt
+import drisk as dr
 
 # Elicit a distribution from intuitive inputs.
-dist = mt.LogitNormal.elicit(low=0.1, high=0.25)
+dist = dr.LogitNormal.elicit(low=0.1, high=0.25)
 
 # Draw Monte Carlo samples.
 samples = dist.sample(1_000)
@@ -46,7 +46,7 @@ Use `uv run ...` for commands that should execute inside the managed environment
 ```bash
 uv run pytest
 uv run ruff check .
-uv run python -c "import monte as mt; print(mt.Normal.elicit(0, 1))"
+uv run python -c "import drisk as dr; print(dr.Normal.elicit(0, 1))"
 ```
 
 When adding dependencies, use `uv add` so `pyproject.toml` and `uv.lock` stay in sync:
@@ -78,7 +78,7 @@ mise run docs      # preview the Quarto documentation site
 ## Project layout
 
 ```text
-src/monte/
+src/drisk/
   distributions/
     base.py                  # shared distribution interfaces
     types.py                 # shared typing helpers

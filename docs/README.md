@@ -1,6 +1,6 @@
-# monte docs
+# drisk docs
 
-This folder is the Quarto website root for `monte` examples and report outputs.
+This folder is the Quarto website root for `drisk` examples and report outputs.
 
 ## Rendering the site locally
 
@@ -21,4 +21,4 @@ The rendered website is written to `docs/_site/`.
 
 ## Deployment
 
-The site is deployed to GitHub Pages at <https://nick-dorsch.github.io/monte/> by the workflow in `.github/workflows/docs.yml` whenever changes are pushed to `main`. In GitHub, configure **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
+The site is deployed to GitHub Pages at <https://nick-dorsch.github.io/drisk/> by the workflow in `.github/workflows/docs.yml` whenever changes are pushed to `main`. In GitHub, configure **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.

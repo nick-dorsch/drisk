@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from monte import CorrelationMatrix, GaussianCopula, Normal, StudentTCopula
+from drisk import CorrelationMatrix, GaussianCopula, Normal, StudentTCopula
 
 
 def test_gaussian_copula_sample_shape_and_rvs_alias() -> None:

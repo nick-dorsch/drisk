@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from monte.distributions import (
+from drisk.distributions import (
     Exponential,
     Gamma,
     LogitNormal,

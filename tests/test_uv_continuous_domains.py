@@ -1,11 +1,11 @@
-from monte.distributions import (
+from drisk.distributions import (
     UvBoundedContinuous,
     UvContinuous,
     UvPositiveContinuous,
     UvRealContinuous,
     UvUnitBoundedContinuous,
 )
-from monte.distributions.univariate import UvDistribution
+from drisk.distributions.univariate import UvDistribution
 
 
 def test_uv_continuous_domain_hierarchy() -> None:

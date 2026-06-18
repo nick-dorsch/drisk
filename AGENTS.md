@@ -4,24 +4,24 @@ Guidance for coding agents working in this repository.
 
 ## Project overview
 
-`monte` is a Python package for quick Monte Carlo modelling, with an emphasis on distribution elicitation and composable models. The package uses a `src/` layout and is intended to provide a notebook-friendly API:
+`drisk` is a Python package for quick Monte Carlo modelling, with an emphasis on distribution elicitation and composable models. The package uses a `src/` layout and is intended to provide a notebook-friendly API:
 
 ```python
-import monte as mt
+import drisk as dr
 
-dist = mt.LogitNormal.elicit(0.1, 0.25)
+dist = dr.LogitNormal.elicit(0.1, 0.25)
 samples = dist.sample(1000)
 ```
 
 ## Repository conventions
 
-- Source code lives under `src/monte/`.
+- Source code lives under `src/drisk/`.
 - Tests live under `tests/`.
-- Public user-facing APIs should generally be exported from `src/monte/__init__.py` so notebook users can use `import monte as mt`.
+- Public user-facing APIs should generally be exported from `src/drisk/__init__.py` so notebook users can use `import drisk as dr`.
 - Keep abstractions close to their package scope:
-  - Top-level distribution interfaces in `src/monte/distributions/`.
-  - Univariate interfaces in `src/monte/distributions/univariate/`.
-  - Univariate continuous interfaces and implementations in `src/monte/distributions/univariate/continuous/`.
+  - Top-level distribution interfaces in `src/drisk/distributions/`.
+  - Univariate interfaces in `src/drisk/distributions/univariate/`.
+  - Univariate continuous interfaces and implementations in `src/drisk/distributions/univariate/continuous/`.
 - Domain semantics should be represented with abstract base classes / marker classes, e.g. `UvUnitBoundedContinuous`, not only with unions.
 - Distribution `dist_type` values should be plain string literals, not enums.
 - All concrete distributions should implement the `Distribution` API:
@@ -43,7 +43,7 @@ uv lock
 uv run pytest
 uv run ruff check .
 uv run ruff format .
-uv run python -c "import monte as mt; print(mt.Normal.elicit(0, 1))"
+uv run python -c "import drisk as dr; print(dr.Normal.elicit(0, 1))"
 ```
 
 Do not use bare `python`, `pip`, or globally installed tools when working in this repo. Prefer `uv run ...` so commands execute in the project environment.

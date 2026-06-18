@@ -3,9 +3,9 @@ project:
   output-dir: _site
 
 website:
-  title: "monte"
-  site-url: "https://nick-dorsch.github.io/monte/"
-  description: "Examples and reports for composable Monte Carlo modelling with monte."
+  title: "drisk"
+  site-url: "https://nick-dorsch.github.io/drisk/"
+  description: "Examples and reports for composable Monte Carlo modelling with drisk."
   navbar:
     left:
       - href: index.qmd

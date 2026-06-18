@@ -6,9 +6,9 @@ import numpy as np
 from pydantic import field_validator
 from scipy import stats
 
-from monte.distributions.types import ArrayLike
-from monte.distributions.univariate.discrete.base import UvCountDiscrete
-from monte.random import SeedLike, get_scipy_random_state
+from drisk.distributions.types import ArrayLike
+from drisk.distributions.univariate.discrete.base import UvCountDiscrete
+from drisk.random import SeedLike, get_scipy_random_state
 
 
 class Poisson(UvCountDiscrete):

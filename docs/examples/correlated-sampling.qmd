@@ -9,7 +9,7 @@ The composition example treated each uncertain input as independent. In many rea
 inputs move together: a larger addressable market might also imply higher fixed launch
 costs, and price and unit cost may be positively related.
 
-`monte` lets you keep the same arithmetic expression and then attach correlated sampling
+`drisk` lets you keep the same arithmetic expression and then attach correlated sampling
 to the resulting `MCModel`. The convenience method `.correlate(...)` builds a Gaussian
 copula over the model's distribution inputs.
 
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import monte as mt
+import drisk as dr
 ```
 
 ## Build the same model
@@ -27,35 +27,35 @@ We use the same elicited inputs and profit expression as the Monte Carlo composi
 example.
 
 ```{python}
-market_size = mt.PERT.elicit(
+market_size = dr.PERT.elicit(
     min=20_000,
     mode=50_000,
     max=100_000,
     name="Addressable market size",
 )
 
-conversion = mt.LogitNormal.elicit(
+conversion = dr.LogitNormal.elicit(
     lower=0.02,
     upper=0.08,
     confidence=0.8,
     name="Conversion rate",
 )
 
-price = mt.LogNormal.elicit(
+price = dr.LogNormal.elicit(
     lower=40,
     upper=80,
     confidence=0.8,
     name="Average selling price",
 )
 
-unit_cost = mt.PERT.elicit(
+unit_cost = dr.PERT.elicit(
     min=12,
     mode=18,
     max=30,
     name="Unit cost",
 )
 
-fixed_cost = mt.PERT.elicit(
+fixed_cost = dr.PERT.elicit(
     min=100_000,
     mode=150_000,
     max=250_000,
@@ -92,7 +92,7 @@ For this expression, the order is:
 
 ## Apply a correlation matrix
 
-Pass a full correlation matrix to `.correlate(...)`. Under the hood, `monte` creates a
+Pass a full correlation matrix to `.correlate(...)`. Under the hood, `drisk` creates a
 `GaussianCopula` for these marginal distributions and attaches it to the `MCModel`, so
 `.sample()`, `.summary()`, and `.plot()` all use correlated draws from that point on.
 

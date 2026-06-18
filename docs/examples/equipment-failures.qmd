@@ -25,7 +25,7 @@ annual outcome = number of failures * average outcome per failure
 ```{python}
 import matplotlib.pyplot as plt
 
-import monte as mt
+import drisk as dr
 ```
 
 ## Elicit the inputs
@@ -33,7 +33,7 @@ import monte as mt
 The reliability engineer expects about five pump failures per year across the fleet.
 
 ```{python}
-failures = mt.Poisson.elicit(
+failures = dr.Poisson.elicit(
     lam=5.0,
     name="Pump failures per year",
 )
@@ -44,14 +44,14 @@ fall between $3,000 and $12,000. For average downtime, the engineer provides a
 three-point estimate: optimistic, most likely, and pessimistic hours per failure.
 
 ```{python}
-avg_repair_cost = mt.LogNormal.elicit(
+avg_repair_cost = dr.LogNormal.elicit(
     lower=3_000,
     upper=12_000,
     confidence=0.8,
     name="Average repair cost per failure",
 )
 
-avg_downtime_hours = mt.PERT.elicit(
+avg_downtime_hours = dr.PERT.elicit(
     min=4,
     mode=12,
     max=36,
@@ -71,7 +71,7 @@ fig.tight_layout()
 
 ## Compose annual outcomes
 
-Because `monte` distributions support arithmetic, the annual outcomes read like the
+Because `drisk` distributions support arithmetic, the annual outcomes read like the
 underlying planning logic.
 
 ```{python}

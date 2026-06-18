@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-import monte as mt
-from monte.models import MCModel
+import drisk as dr
+from drisk.models import MCModel
 
 
 def test_distribution_arithmetic_returns_mc_model() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0)
-    y = mt.Normal.elicit(9.0, 11.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
+    y = dr.Normal.elicit(9.0, 11.0)
 
     model = x + y * 2 - 3
 
@@ -16,8 +16,8 @@ def test_distribution_arithmetic_returns_mc_model() -> None:
 
 
 def test_model_arithmetic_matches_numpy_with_shared_rng() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0)
-    y = mt.LogNormal.elicit(8.0, 12.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
+    y = dr.LogNormal.elicit(8.0, 12.0)
     model = x * y + 2
 
     rng = np.random.default_rng(123)
@@ -27,7 +27,7 @@ def test_model_arithmetic_matches_numpy_with_shared_rng() -> None:
 
 
 def test_reused_distribution_object_uses_same_samples() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
 
     doubled = (x + x).sample(size=10, seed=123)
     expected = (2 * x).sample(size=10, seed=123)
@@ -36,7 +36,7 @@ def test_reused_distribution_object_uses_same_samples() -> None:
 
 
 def test_model_reuses_cached_samples_across_report_methods() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
     model = x * 2
 
     samples = model.sample(size=1_000, seed=123)
@@ -47,8 +47,8 @@ def test_model_reuses_cached_samples_across_report_methods() -> None:
 
 
 def test_model_distributions_returns_unique_leaves_in_expression_order() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0, name="x")
-    y = mt.Normal.elicit(9.0, 11.0, name="y")
+    x = dr.Normal.elicit(-1.0, 1.0, name="x")
+    y = dr.Normal.elicit(9.0, 11.0, name="y")
 
     model = x + y * x
 
@@ -56,10 +56,10 @@ def test_model_distributions_returns_unique_leaves_in_expression_order() -> None
 
 
 def test_add_copula_uses_joint_samples_for_model_evaluation() -> None:
-    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
-    y = mt.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
+    x = dr.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = dr.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
     model = x + y
-    copula = mt.GaussianCopula.from_distributions_and_correlation([x, y], 0.75)
+    copula = dr.GaussianCopula.from_distributions_and_correlation([x, y], 0.75)
 
     returned = model.add_copula(copula)
     samples = model.sample(size=1_000, seed=123)
@@ -72,27 +72,27 @@ def test_add_copula_uses_joint_samples_for_model_evaluation() -> None:
 
 
 def test_add_copula_clears_cached_independent_samples() -> None:
-    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
-    y = mt.Normal(params={"mu": 0.0, "sigma": 1.0})
+    x = dr.Normal(params={"mu": 0.0, "sigma": 1.0})
+    y = dr.Normal(params={"mu": 0.0, "sigma": 1.0})
     model = x + y
 
     independent = model.sample(size=100, seed=123)
-    copula = mt.GaussianCopula.from_distributions_and_correlation([x, y], 0.5)
+    copula = dr.GaussianCopula.from_distributions_and_correlation([x, y], 0.5)
     correlated = model.add_copula(copula).sample(size=100, seed=123)
 
     assert not np.array_equal(independent, correlated)
 
 
 def test_correlate_with_scalar_builds_gaussian_copula_in_distribution_order() -> None:
-    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
-    y = mt.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
-    z = mt.Normal(params={"mu": 20.0, "sigma": 3.0}, name="z")
+    x = dr.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = dr.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
+    z = dr.Normal(params={"mu": 20.0, "sigma": 3.0}, name="z")
     model = x + y * z
 
     returned = model.correlate(0.4)
 
     assert returned is model
-    assert isinstance(model.copula, mt.GaussianCopula)
+    assert isinstance(model.copula, dr.GaussianCopula)
     assert tuple(model.copula.distributions) == (x, y, z)
     np.testing.assert_allclose(
         model.copula.corr_matrix.to_numpy(),
@@ -101,16 +101,16 @@ def test_correlate_with_scalar_builds_gaussian_copula_in_distribution_order() ->
 
 
 def test_correlate_with_matrix_builds_gaussian_copula() -> None:
-    x = mt.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
-    y = mt.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
+    x = dr.Normal(params={"mu": 0.0, "sigma": 1.0}, name="x")
+    y = dr.Normal(params={"mu": 10.0, "sigma": 2.0}, name="y")
     model = x + y
     matrix = [[1.0, 0.7], [0.7, 1.0]]
 
     model.correlate(matrix)
     samples = model.sample(size=1_000, seed=123)
-    explicit_copula = mt.GaussianCopula(
+    explicit_copula = dr.GaussianCopula(
         distributions=[x, y],
-        corr_matrix=mt.CorrelationMatrix(matrix=matrix),
+        corr_matrix=dr.CorrelationMatrix(matrix=matrix),
     )
     explicit_samples = explicit_copula.sample(size=1_000, seed=123)
 
@@ -118,7 +118,7 @@ def test_correlate_with_matrix_builds_gaussian_copula() -> None:
 
 
 def test_model_refresh_replaces_cached_samples() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
     model = x * 2
 
     first = model.sample(size=1_000, seed=123)
@@ -129,7 +129,7 @@ def test_model_refresh_replaces_cached_samples() -> None:
 
 
 def test_model_summary_returns_configurable_dataframe() -> None:
-    x = mt.Normal.elicit(-1.0, 1.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
     model = x * 2
 
     summary = model.summary(
@@ -149,7 +149,7 @@ def test_model_summary_returns_configurable_dataframe() -> None:
 def test_model_plot_returns_axes_and_uses_default_x_quantile_range() -> None:
     import matplotlib.pyplot as plt
 
-    x = mt.Normal.elicit(-1.0, 1.0)
+    x = dr.Normal.elicit(-1.0, 1.0)
     model = x * 2
     fig, ax = plt.subplots()
 
@@ -165,7 +165,7 @@ def test_model_plot_returns_axes_and_uses_default_x_quantile_range() -> None:
 def test_model_plot_accepts_custom_x_quantile_range() -> None:
     import matplotlib.pyplot as plt
 
-    x = mt.Normal.elicit(0.0, 1.0)
+    x = dr.Normal.elicit(0.0, 1.0)
     model = x + 1
     fig, ax = plt.subplots()
 
@@ -180,7 +180,7 @@ def test_model_plot_accepts_custom_x_quantile_range() -> None:
 def test_model_plot_can_show_full_sampled_x_range() -> None:
     import matplotlib.pyplot as plt
 
-    x = mt.Normal.elicit(0.0, 1.0)
+    x = dr.Normal.elicit(0.0, 1.0)
     model = x + 1
     fig, ax = plt.subplots()
 
@@ -195,7 +195,7 @@ def test_model_plot_can_show_full_sampled_x_range() -> None:
 
 
 def test_reverse_and_unary_operations() -> None:
-    x = mt.Normal.elicit(1.0, 3.0)
+    x = dr.Normal.elicit(1.0, 3.0)
 
     rng = np.random.default_rng(123)
     x_samples = x.sample(size=8, seed=rng)

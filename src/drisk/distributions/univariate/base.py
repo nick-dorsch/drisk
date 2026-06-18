@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from monte.distributions.base import Distribution
+from drisk.distributions.base import Distribution
 
 
 class UvDistribution(Distribution, ABC):

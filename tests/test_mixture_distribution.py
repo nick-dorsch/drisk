@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from monte.distributions import Normal, Poisson, UvMixture
+from drisk.distributions import Normal, Poisson, UvMixture
 
 
 def test_uv_mixture_normalizes_weights_and_samples_from_components() -> None:

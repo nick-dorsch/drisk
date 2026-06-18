@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from monte.correlations import CorrelationMatrix
+from drisk.correlations import CorrelationMatrix
 
 
 def test_correlation_matrix_validates_and_roundtrips_numpy() -> None:

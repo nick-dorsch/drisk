@@ -13,7 +13,7 @@ A product team is considering a new launch. The key inputs are uncertain:
 - the unit cost, and
 - the fixed launch cost.
 
-With `monte`, each uncertain input can be represented as an elicited distribution. The
+With `drisk`, each uncertain input can be represented as an elicited distribution. The
 business model can then be written with ordinary Python arithmetic. Arithmetic on
 distribution objects returns an `MCModel`, a lazy Monte Carlo expression that samples
 each input and applies NumPy operations sample-by-sample.
@@ -21,7 +21,7 @@ each input and applies NumPy operations sample-by-sample.
 ```{python}
 import matplotlib.pyplot as plt
 
-import monte as mt
+import drisk as dr
 ```
 
 ## Elicit uncertain inputs
@@ -31,35 +31,35 @@ for a conversion rate bounded between 0 and 1, and a lognormal distribution for 
 skew in selling price.
 
 ```{python}
-market_size = mt.PERT.elicit(
+market_size = dr.PERT.elicit(
     min=20_000,
     mode=50_000,
     max=100_000,
     name="Addressable market size",
 )
 
-conversion = mt.LogitNormal.elicit(
+conversion = dr.LogitNormal.elicit(
     lower=0.02,
     upper=0.08,
     confidence=0.8,
     name="Conversion rate",
 )
 
-price = mt.LogNormal.elicit(
+price = dr.LogNormal.elicit(
     lower=40,
     upper=80,
     confidence=0.8,
     name="Average selling price",
 )
 
-unit_cost = mt.PERT.elicit(
+unit_cost = dr.PERT.elicit(
     min=12,
     mode=18,
     max=30,
     name="Unit cost",
 )
 
-fixed_cost = mt.PERT.elicit(
+fixed_cost = dr.PERT.elicit(
     min=100_000,
     mode=150_000,
     max=250_000,
@@ -137,6 +137,6 @@ profit = market_size * conversion * (price - unit_cost) - fixed_cost
 profit.sample(size=5, seed=7)
 ```
 
-That expression remains lazy until `.sample(...)` is called. During sampling, `monte`
+That expression remains lazy until `.sample(...)` is called. During sampling, `drisk`
 uses a shared random number generator across the inputs and NumPy broadcasting for the
 sample-wise arithmetic.

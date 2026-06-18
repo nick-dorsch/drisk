@@ -6,9 +6,9 @@ from typing import Any, Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 
-from monte.arithmetic import ArithmeticMixin
-from monte.distributions.types import ArrayLike
-from monte.random import SeedLike
+from drisk.arithmetic import ArithmeticMixin
+from drisk.distributions.types import ArrayLike
+from drisk.random import SeedLike
 
 
 class Distribution(ArithmeticMixin, BaseModel, ABC):
@@ -16,7 +16,7 @@ class Distribution(ArithmeticMixin, BaseModel, ABC):
     Top-level abstract base class for probability distributions.
 
     Combines Pydantic models for validation/serialization with abstract methods
-    for the sampling interface used by Monte models.
+    for the sampling interface used by Drisk models.
     """
 
     dist_type: str

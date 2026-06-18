@@ -1,15 +1,15 @@
 ---
-title: "monte"
+title: "drisk"
 ---
 
-`monte` is a Python package designed for quick Monte Carlo modelling, with an emphasis
+`drisk` is a Python package designed for quick Monte Carlo modelling, with an emphasis
 on distribution elicitation and composable models.
 
 The intention is to make Monte Carlo models ergonomic enough for "back of the envelope"
 problems in quick scripts or notebooks, while also supporting more advanced methods for
 heavier simulation workloads.
 
-`monte` is in development, and currently supports univariate continuous and discrete
+`drisk` is in development, and currently supports univariate continuous and discrete
 distribution sampling, including correlated sampling using Copulas.
 
 This documentation site collects runnable examples and report-style walkthroughs.

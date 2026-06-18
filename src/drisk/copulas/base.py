@@ -7,9 +7,9 @@ from typing import Self
 import numpy as np
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from monte.correlations import CorrelationMatrix
-from monte.distributions import UvDistribution
-from monte.random import SeedLike
+from drisk.correlations import CorrelationMatrix
+from drisk.distributions import UvDistribution
+from drisk.random import SeedLike
 
 
 class Copula(BaseModel, ABC):

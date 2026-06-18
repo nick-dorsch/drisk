@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from monte.distributions import (
+from drisk.distributions import (
     Bernoulli,
     Binomial,
     Geometric,

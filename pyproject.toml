@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "monte"
+name = "drisk"
 version = "0.1.0"
 description = "Composable tools for quick Monte Carlo modelling and distribution elicitation."
 readme = "README.md"
@@ -53,7 +53,7 @@ docs = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/monte"]
+packages = ["src/drisk"]
 
 [tool.hatch.build.targets.sdist]
 include = [

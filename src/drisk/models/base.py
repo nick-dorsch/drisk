@@ -9,12 +9,12 @@ from typing import Any, Self
 import numpy as np
 import pandas as pd
 
-from monte.arithmetic import ArithmeticMixin
-from monte.copulas import Copula, GaussianCopula
-from monte.correlations import CorrelationMatrix
-from monte.distributions import ArrayLike, Distribution
-from monte.random import SeedLike, get_rng
-from monte.summary import percentile_label, threshold_probability_label
+from drisk.arithmetic import ArithmeticMixin
+from drisk.copulas import Copula, GaussianCopula
+from drisk.correlations import CorrelationMatrix
+from drisk.distributions import ArrayLike, Distribution
+from drisk.random import SeedLike, get_rng
+from drisk.summary import percentile_label, threshold_probability_label
 
 Operation = Callable[..., Any]
 Operand = Any

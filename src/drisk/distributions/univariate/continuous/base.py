@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 
-from monte.distributions.univariate.base import UvDistribution
+from drisk.distributions.univariate.base import UvDistribution
 
 
 class UvContinuous(UvDistribution, ABC):

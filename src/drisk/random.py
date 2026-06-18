@@ -1,4 +1,4 @@
-"""Random number generation helpers for Monte."""
+"""Random number generation helpers for Drisk."""
 
 from types import ModuleType
 from typing import Any

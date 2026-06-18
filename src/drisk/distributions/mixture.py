@@ -5,9 +5,9 @@ from typing import Any, Literal, Self
 import numpy as np
 from pydantic import SerializeAsAny, model_validator
 
-from monte.distributions.types import ArrayLike
-from monte.distributions.univariate import UvDistribution
-from monte.random import SeedLike, get_rng
+from drisk.distributions.types import ArrayLike
+from drisk.distributions.univariate import UvDistribution
+from drisk.random import SeedLike, get_rng
 
 
 class UvMixture(UvDistribution):

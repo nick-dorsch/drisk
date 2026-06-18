@@ -1,19 +1,29 @@
-"""Gaussian copula."""
+"""Student-t copula."""
 
 from typing import Literal
 
 import numpy as np
+from pydantic import field_validator
 from scipy import stats
 
-from monte.random import SeedLike, get_rng
+from drisk.random import SeedLike, get_rng
 
 from .base import Copula
 
 
-class GaussianCopula(Copula):
-    """Sample marginal distributions with dependence induced by a Gaussian copula."""
+class StudentTCopula(Copula):
+    """Sample marginals with dependence induced by a Student-t copula."""
 
-    copula_type: Literal["gaussian"] = "gaussian"
+    copula_type: Literal["student_t"] = "student_t"
+    nu: float = 4.0
+
+    @field_validator("nu")
+    @classmethod
+    def validate_nu(cls, nu: float) -> float:
+        """Validate degrees of freedom."""
+        if nu <= 0:
+            raise ValueError(f"nu must be positive, got {nu}")
+        return nu
 
     def sample(
         self, size: int | tuple[int, ...] = 1, *, seed: SeedLike = None
@@ -29,7 +39,10 @@ class GaussianCopula(Copula):
             size=size,
         )
         normal_samples = np.moveaxis(normal_samples, -1, 0)
-        uniform_samples = stats.norm.cdf(normal_samples)
+
+        chi_square_samples = rng.chisquare(df=self.nu, size=size) / self.nu
+        t_samples = normal_samples / np.sqrt(chi_square_samples)
+        uniform_samples = stats.t.cdf(t_samples, df=self.nu)
 
         samples = np.empty_like(uniform_samples)
         for i, dist in enumerate(self.distributions):
