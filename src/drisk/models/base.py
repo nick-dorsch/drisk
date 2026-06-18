@@ -3,26 +3,77 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any, Self
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from drisk.arithmetic import ArithmeticMixin
 from drisk.copulas import Copula, GaussianCopula
 from drisk.correlations import CorrelationMatrix
 from drisk.distributions import ArrayLike, Distribution
 from drisk.random import SeedLike, get_rng
-from drisk.summary import percentile_label, threshold_probability_label
+from drisk.summary import (
+    DEFAULT_PERCENTILES,
+    apply_percentile_yaxis,
+    conditional_stat_label,
+    descending_percentile_values,
+    percentile_label,
+    threshold_probability_label,
+)
 
-Operation = Callable[..., Any]
 Operand = Any
 EvaluationCache = dict[tuple[type[Any], int], np.ndarray]
 
 
-@dataclass
-class MCModel(ArithmeticMixin):
+class MCOperation(StrEnum):
+    """Serializable operations supported by Monte Carlo model expressions."""
+
+    ADD = "add"
+    SUBTRACT = "subtract"
+    MULTIPLY = "multiply"
+    DIVIDE = "divide"
+    POWER = "power"
+    NEGATIVE = "negative"
+    POSITIVE = "positive"
+    ABS = "abs"
+    LESS = "less"
+    LESS_EQUAL = "less_equal"
+    GREATER = "greater"
+    GREATER_EQUAL = "greater_equal"
+    WHERE = "where"
+
+    @property
+    def function(self) -> Callable[..., Any]:
+        """Return the NumPy callable implementing this operation."""
+        return {
+            MCOperation.ADD: np.add,
+            MCOperation.SUBTRACT: np.subtract,
+            MCOperation.MULTIPLY: np.multiply,
+            MCOperation.DIVIDE: np.divide,
+            MCOperation.POWER: np.power,
+            MCOperation.NEGATIVE: np.negative,
+            MCOperation.POSITIVE: np.positive,
+            MCOperation.ABS: np.abs,
+            MCOperation.LESS: np.less,
+            MCOperation.LESS_EQUAL: np.less_equal,
+            MCOperation.GREATER: np.greater,
+            MCOperation.GREATER_EQUAL: np.greater_equal,
+            MCOperation.WHERE: np.where,
+        }[self]
+
+    @classmethod
+    def from_function(cls, op: Callable[..., Any]) -> Self:
+        """Return the serializable operation matching a NumPy callable."""
+        for operation in cls:
+            if op is operation.function:
+                return operation
+        raise ValueError(f"Unsupported MCModel operation: {op}")
+
+
+class MCModel(ArithmeticMixin, BaseModel):
     """
     Lazy Monte Carlo expression composed from distributions, constants, and models.
 
@@ -31,27 +82,39 @@ class MCModel(ArithmeticMixin):
     CDF, or inverse-CDF methods.
     """
 
-    op: Operation
+    op: MCOperation
     operands: tuple[Operand, ...]
     name: str | None = None
     copula: Copula | None = None
-    _cached_samples: np.ndarray | None = field(default=None, init=False, repr=False)
-    _cached_size: int | tuple[int, ...] | None = field(
-        default=None,
-        init=False,
-        repr=False,
-    )
-    _cached_seed: SeedLike = field(default=None, init=False, repr=False)
+
+    model_config = ConfigDict(extra="forbid")
+
+    _cached_samples: np.ndarray | None = PrivateAttr(default=None)
+    _cached_size: int | tuple[int, ...] | None = PrivateAttr(default=None)
+    _cached_seed: SeedLike = PrivateAttr(default=None)
 
     @classmethod
     def from_operation(
         cls,
-        op: Operation,
+        op: MCOperation | Callable[..., Any],
         *operands: Operand,
         name: str | None = None,
     ) -> MCModel:
         """Build a lazy model expression from an operation and operands."""
-        return cls(op=op, operands=operands, name=name)
+        operation = MCOperation.from_function(op) if callable(op) else op
+        return cls(op=operation, operands=operands, name=name)
+
+    @classmethod
+    def where(
+        cls,
+        condition: Operand,
+        x: Operand,
+        y: Operand,
+        *,
+        name: str | None = None,
+    ) -> MCModel:
+        """Build a lazy model expression equivalent to ``numpy.where``."""
+        return cls.from_operation(MCOperation.WHERE, condition, x, y, name=name)
 
     def sample(
         self,
@@ -187,35 +250,64 @@ class MCModel(ArithmeticMixin):
         seed: SeedLike = None,
         refresh: bool = False,
         threshold: float | int | None = None,
-        percentiles: list[float | int] | tuple[float | int, ...] = (90, 50, 10),
+        conditional_on_threshold: bool = False,
+        percentiles: list[float | int] | tuple[float | int, ...] = DEFAULT_PERCENTILES,
         precision: int | None = 2,
     ) -> pd.DataFrame:
         """
         Summarize simulated model outcomes as a tidy dataframe.
 
-        The summary includes the mean, configurable percentiles, and optionally
-        the probability that simulated values exceed ``threshold``. Values are
-        rounded to ``precision`` decimal places by default; pass
-        ``precision=None`` to return unrounded values. Cached samples are reused
-        by default when available.
+        The summary includes the mean, configurable descending percentiles, and optionally
+        the probability that simulated values exceed ``threshold``. When
+        ``conditional_on_threshold`` is true, the mean and percentile values are
+        calculated only from values exceeding ``threshold`` and are explicitly
+        labeled with that condition. Values are rounded to ``precision`` decimal
+        places by default; pass ``precision=None`` to return unrounded values.
+        Cached samples are reused by default when available.
         """
-        samples = np.ravel(self._get_samples(size=size, seed=seed, refresh=refresh))
-        values: dict[str, float] = {"mean": float(np.mean(samples))}
+        if conditional_on_threshold and threshold is None:
+            raise ValueError(
+                "conditional_on_threshold=True requires a threshold to condition on"
+            )
 
-        if threshold is not None:
+        samples = np.ravel(self._get_samples(size=size, seed=seed, refresh=refresh))
+        summary_samples = samples
+        label_threshold = threshold if conditional_on_threshold else None
+        values: dict[str, float] = {}
+
+        if label_threshold is not None:
+            values[threshold_probability_label(label_threshold)] = float(
+                np.mean(samples > label_threshold)
+            )
+            summary_samples = samples[samples > label_threshold]
+
+        mean_label = "mean"
+        if label_threshold is not None:
+            mean_label = conditional_stat_label(mean_label, label_threshold)
+        values[mean_label] = (
+            float(np.mean(summary_samples)) if summary_samples.size else float("nan")
+        )
+
+        if threshold is not None and label_threshold is None:
             values[threshold_probability_label(threshold)] = float(
                 np.mean(samples > threshold)
             )
 
-        percentile_values = np.percentile(samples, percentiles)
-        values.update(
-            {
-                percentile_label(percentile): float(value)
-                for percentile, value in zip(
-                    percentiles, percentile_values, strict=True
-                )
+        if summary_samples.size == 0:
+            percentile_values = {
+                percentile_label(percentile): float("nan") for percentile in percentiles
             }
-        )
+        else:
+            percentile_values = descending_percentile_values(
+                summary_samples, percentiles
+            )
+
+        if label_threshold is not None:
+            percentile_values = {
+                conditional_stat_label(label, label_threshold): value
+                for label, value in percentile_values.items()
+            }
+        values.update(percentile_values)
 
         index_label = self.name or "value"
         summary = pd.DataFrame(values, index=pd.Index([index_label], name="metric"))
@@ -272,8 +364,7 @@ class MCModel(ArithmeticMixin):
             ax.set_xlim(*np.quantile(samples, x_quantile_range))
 
         ax.set_xlabel(self.name or "value")
-        ax.set_ylabel("cumulative probability")
-        ax.set_ylim(bottom=0, top=1)
+        apply_percentile_yaxis(ax)
         ax.set_title(self.name or "Monte Carlo model")
 
         hist_ax.set_ylim(bottom=0)
@@ -306,7 +397,7 @@ class MCModel(ArithmeticMixin):
             _eval_operand(operand, size=size, seed=seed, cache=cache)
             for operand in self.operands
         ]
-        result = np.asarray(self.op(*values))
+        result = np.asarray(self.op.function(*values))
         cache[key] = result
         return result
 

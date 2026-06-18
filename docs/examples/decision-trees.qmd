@@ -146,9 +146,7 @@ print(f"Probability of loss under selected policy: {prob_loss:.1%}")
 ```{python}
 fig, ax = plt.subplots(figsize=(8, 4.5))
 tree.plot(ax=ax, size=50_000, seed=123, color="#54A24B")
-ax.axvline(0, color="black", linestyle="--", linewidth=1, label="Break-even")
 ax.set_title("CDF for the selected decision policy")
 ax.set_xlabel("NPV")
-ax.legend()
 fig.tight_layout()
 ```

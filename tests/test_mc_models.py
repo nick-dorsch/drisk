@@ -140,11 +140,102 @@ def test_model_summary_returns_configurable_dataframe() -> None:
         precision=None,
     )
 
+    samples = model.sample(size=1_000, seed=123)
+
     assert "value" in summary.index
     assert {"mean", "p(> 0)", "p99", "p50", "p1"}.issubset(summary.columns)
-    assert summary.loc["value", "p(> 0)"] == pytest.approx(
-        np.mean(model.sample(size=1_000, seed=123) > 0)
+    assert summary.loc["value", "p99"] == pytest.approx(np.percentile(samples, 1))
+    assert summary.loc["value", "p90"] == pytest.approx(np.percentile(samples, 10))
+    assert summary.loc["value", "p10"] == pytest.approx(np.percentile(samples, 90))
+    assert summary.loc["value", "p1"] == pytest.approx(np.percentile(samples, 99))
+    assert summary.loc["value", "p(> 0)"] == pytest.approx(np.mean(samples > 0))
+
+
+def test_model_summary_can_condition_statistics_on_threshold() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = x * 2
+
+    summary = model.summary(
+        size=1_000,
+        seed=123,
+        threshold=0,
+        conditional_on_threshold=True,
+        percentiles=(90, 50, 10),
+        precision=None,
     )
+
+    samples = model.sample(size=1_000, seed=123)
+    conditional_samples = samples[samples > 0]
+
+    assert summary.columns.tolist() == [
+        "p(> 0)",
+        "mean | > 0",
+        "p90 | > 0",
+        "p50 | > 0",
+        "p10 | > 0",
+    ]
+    assert summary.loc["value", "p(> 0)"] == pytest.approx(np.mean(samples > 0))
+    assert summary.loc["value", "mean | > 0"] == pytest.approx(
+        np.mean(conditional_samples)
+    )
+    assert summary.loc["value", "p90 | > 0"] == pytest.approx(
+        np.percentile(conditional_samples, 10)
+    )
+    assert summary.loc["value", "p50 | > 0"] == pytest.approx(
+        np.percentile(conditional_samples, 50)
+    )
+    assert summary.loc["value", "p10 | > 0"] == pytest.approx(
+        np.percentile(conditional_samples, 90)
+    )
+
+
+def test_model_summary_conditional_threshold_requires_threshold() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = x * 2
+
+    with pytest.raises(ValueError, match="requires a threshold"):
+        model.summary(conditional_on_threshold=True)
+
+
+def test_model_summary_conditional_statistics_are_nan_without_exceedances() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = x * 2
+
+    summary = model.summary(
+        size=1_000,
+        seed=123,
+        threshold=1_000,
+        conditional_on_threshold=True,
+        percentiles=(90, 50, 10),
+        precision=None,
+    )
+
+    assert summary.loc["value", "p(> 1000)"] == 0.0
+    assert np.isnan(summary.loc["value", "mean | > 1000"])
+    assert np.isnan(summary.loc["value", "p90 | > 1000"])
+    assert np.isnan(summary.loc["value", "p50 | > 1000"])
+    assert np.isnan(summary.loc["value", "p10 | > 1000"])
+
+
+def test_model_summary_uses_default_descending_percentiles() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = x * 2
+
+    summary = model.summary(size=1_000, seed=123, precision=None)
+    samples = model.sample(size=1_000, seed=123)
+
+    assert summary.columns.tolist() == [
+        "mean",
+        "p99",
+        "p90",
+        "p75",
+        "p50",
+        "p25",
+        "p10",
+        "p1",
+    ]
+    assert summary.loc["value", "p99"] == pytest.approx(np.percentile(samples, 1))
+    assert summary.loc["value", "p1"] == pytest.approx(np.percentile(samples, 99))
 
 
 def test_model_summary_rounds_to_default_precision() -> None:
@@ -181,6 +272,18 @@ def test_model_plot_returns_axes_and_uses_default_x_quantile_range() -> None:
     assert returned_ax is ax
     samples = np.ravel(model.sample(size=100, seed=123))
     assert ax.get_xlim() == pytest.approx(tuple(np.quantile(samples, (0.001, 0.999))))
+    assert ax.get_ylim() == pytest.approx((0, 1))
+    np.testing.assert_allclose(ax.get_yticks(), [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99])
+    assert [label.get_text() for label in ax.get_yticklabels()] == [
+        "p99",
+        "p90",
+        "p75",
+        "p50",
+        "p25",
+        "p10",
+        "p1",
+    ]
+    assert ax.get_ylabel() == ""
 
     plt.close(fig)
 
@@ -227,3 +330,16 @@ def test_reverse_and_unary_operations() -> None:
     model = abs(-((100 / x) ** 2))
 
     np.testing.assert_allclose(model.sample(size=8, seed=123), expected)
+
+
+def test_where_and_comparison_operations() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = dr.where(x > 0, x * 2, -1)
+
+    rng = np.random.default_rng(123)
+    x_samples = x.sample(size=8, seed=rng)
+    expected = np.where(x_samples > 0, x_samples * 2, -1)
+
+    np.testing.assert_allclose(model.sample(size=8, seed=123), expected)
+    assert model.op == dr.MCOperation.WHERE
+    assert model.operands[0].op == dr.MCOperation.GREATER

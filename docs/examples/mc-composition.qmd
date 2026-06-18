@@ -105,26 +105,10 @@ summary
 ## Present the result
 
 ```{python}
-summary_values = summary.loc["value"]
-mean = summary_values["mean"]
-p90 = summary_values["p90"]
-p50 = summary_values["p50"]
-p10 = summary_values["p10"]
-prob_profit = summary_values["p(> 0)"]
-
-print(f"Mean profit: ${mean:,.0f}")
-print(f"P10 / P50 / P90: ${p10:,.0f} / ${p50:,.0f} / ${p90:,.0f}")
-print(f"Probability of profit: {prob_profit:.1%}")
-```
-
-```{python}
 fig, ax = plt.subplots(figsize=(8, 4.5))
 profit.plot(ax=ax, color="#4C78A8")
-ax.axvline(0, color="black", linestyle="--", linewidth=1, label="Break-even")
-ax.axvline(p50, color="#F58518", linewidth=2, label="Median")
 ax.set_title("Simulated product launch profit")
 ax.set_xlabel("Profit")
-ax.legend()
 fig.tight_layout()
 ```
 

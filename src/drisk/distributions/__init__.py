@@ -28,6 +28,11 @@ from .univariate import (
     UvUnitBoundedContinuous,
 )
 
+# ``UvMixture.components`` is typed as ``UvDistribution``. During initial class
+# construction the concrete distribution registry is not complete, so rebuild the
+# model once all distribution implementations are imported.
+UvMixture.model_rebuild(force=True)
+
 __all__ = [
     "ArrayLike",
     "Bernoulli",

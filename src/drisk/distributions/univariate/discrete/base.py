@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 
 from drisk.distributions.univariate.base import UvDistribution
+from drisk.summary import apply_percentile_yaxis
 
 
 class UvDiscrete(UvDistribution, ABC):
@@ -58,8 +59,7 @@ class UvDiscrete(UvDistribution, ABC):
         pmf_ax.bar(x, pmf, width=0.8, **bar_kwargs)
 
         ax.set_xlabel(self.name or "x")
-        ax.set_ylabel("cumulative probability")
-        ax.set_ylim(bottom=0, top=1)
+        apply_percentile_yaxis(ax)
         ax.set_title(self.name or self.dist_type)
 
         pmf_ax.set_ylim(bottom=0)

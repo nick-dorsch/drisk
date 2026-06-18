@@ -9,7 +9,11 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, SerializeAsAny, model_validator
 
 from drisk.random import SeedLike
-from drisk.summary import percentile_label
+from drisk.summary import (
+    DEFAULT_PERCENTILES,
+    apply_percentile_yaxis,
+    descending_percentile_values,
+)
 
 from ._plotting import build_tree_layout, draw_tree_layout, set_tree_limits
 from .nodes.base import DTreeNode
@@ -94,21 +98,13 @@ class DTree(BaseModel):
         *,
         size: int | tuple[int, ...] = 10_000,
         seed: SeedLike = None,
-        percentiles: list[float | int] | tuple[float | int, ...] = (90, 50, 10),
+        percentiles: list[float | int] | tuple[float | int, ...] = DEFAULT_PERCENTILES,
         precision: int | None = 2,
     ) -> pd.DataFrame:
         """Summarize simulated outcomes under the rollback-selected policy."""
         samples = np.ravel(self.sample(size=size, seed=seed))
         values: dict[str, float] = {"mean": float(np.mean(samples))}
-        percentile_values = np.percentile(samples, percentiles)
-        values.update(
-            {
-                percentile_label(percentile): float(value)
-                for percentile, value in zip(
-                    percentiles, percentile_values, strict=True
-                )
-            }
-        )
+        values.update(descending_percentile_values(samples, percentiles))
         index_label = self.name or "value"
         summary = pd.DataFrame(values, index=pd.Index([index_label], name="metric"))
         if precision is not None:
@@ -141,8 +137,7 @@ class DTree(BaseModel):
         hist_ax.spines["right"].set_visible(False)
 
         ax.set_xlabel(self.name or "value")
-        ax.set_ylabel("cumulative probability")
-        ax.set_ylim(bottom=0, top=1)
+        apply_percentile_yaxis(ax)
         ax.set_title(self.name or "Decision tree outcome")
 
         if show:

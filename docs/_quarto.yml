@@ -20,14 +20,16 @@ website:
             text: Distribution mixtures
           - href: examples/correlated-sampling.qmd
             text: Correlated sampling with copulas
-          - href: examples/decision-trees.qmd
-            text: Decision trees
           - href: examples/equipment-failures.qmd
             text: Equipment failures
+          - href: examples/prospect-evaluation.qmd
+            text: Prospect evaluation
+          - href: examples/decision-trees.qmd
+            text: Decision trees
 
 format:
   html:
-    theme: minty
+    theme: journal
     toc: true
     code-fold: false
     code-copy: true

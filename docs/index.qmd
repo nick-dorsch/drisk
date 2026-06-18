@@ -18,8 +18,6 @@ This documentation site collects runnable examples and report-style walkthroughs
 ## Quick start
 
 ```{python}
-import matplotlib.pyplot as plt
-
 import drisk as dr
 ```
 
@@ -53,16 +51,13 @@ Compose the distributions with ordinary Python arithmetic, then simulate the res
 
 ```{python}
 monthly_profit = volume * margin
+monthly_profit.name = "Simulated Monthly Profit"
 samples = monthly_profit.sample(size=50_000, seed=42)
 samples[:5]
 ```
 
 ```{python}
-fig, ax = plt.subplots(figsize=(8, 4.5))
-monthly_profit.plot(ax=ax, color="seagreen")
-ax.set_title("Simulated monthly profit")
-ax.set_xlabel("Monthly profit")
-fig.tight_layout()
+monthly_profit.plot(color="seagreen")
 ```
 
 ## Examples
@@ -74,10 +69,10 @@ Arithmetic](examples/mc-composition.qmd): a new product launch profit model buil
 elicited distributions and ordinary Python arithmetic.
 - [Combining Distributions with Mixtures](examples/mixtures.qmd): weighted blends of
 univariate distributions for processes with distinct regimes.
+- [Composing Discrete and Continuous Distributions](examples/equipment-failures.qmd):
+an equipment-failure planning model combining a Poisson event count with continuous
+average repair cost and downtime distributions.
 - [Correlated Sampling with Copulas](examples/correlated-sampling.qmd): the same product
 launch model with correlated input sampling.
 - [Decision Trees for Business Decisions](examples/decision-trees.qmd): rollback
 analysis for sequential business choices with uncertain outcomes.
-- [Composing Discrete and Continuous Distributions](examples/equipment-failures.qmd):
-an equipment-failure planning model combining a Poisson event count with continuous
-average repair cost and downtime distributions.

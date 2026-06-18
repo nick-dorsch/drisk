@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 
 from drisk.distributions.univariate.base import UvDistribution
+from drisk.summary import apply_percentile_yaxis
 
 
 class UvContinuous(UvDistribution, ABC):
@@ -52,8 +53,7 @@ class UvContinuous(UvDistribution, ABC):
         pdf_ax.fill_between(x, 0, pdf, **fill_kwargs)
 
         ax.set_xlabel(self.name or "x")
-        ax.set_ylabel("cumulative probability")
-        ax.set_ylim(bottom=0, top=1)
+        apply_percentile_yaxis(ax)
         ax.set_title(self.name or self.dist_type)
 
         pdf_ax.set_ylim(bottom=0)

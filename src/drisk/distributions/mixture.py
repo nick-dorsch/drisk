@@ -3,18 +3,19 @@
 from typing import Any, Literal, Self
 
 import numpy as np
-from pydantic import SerializeAsAny, model_validator
+from pydantic import model_validator
 
 from drisk.distributions.types import ArrayLike
 from drisk.distributions.univariate import UvDistribution
 from drisk.random import SeedLike, get_rng
+from drisk.summary import apply_percentile_yaxis
 
 
 class UvMixture(UvDistribution):
     """Weighted mixture of one or more univariate component distributions."""
 
     dist_type: Literal["uv_mixture"] = "uv_mixture"
-    components: tuple[SerializeAsAny[UvDistribution], ...]
+    components: tuple[UvDistribution, ...]
     weights: tuple[float, ...]
     params: dict[str, float | int] = {}
 
@@ -140,8 +141,7 @@ class UvMixture(UvDistribution):
         pdf_ax.fill_between(x, 0, pdf, **fill_kwargs)
 
         ax.set_xlabel(self.name or "x")
-        ax.set_ylabel("cumulative probability")
-        ax.set_ylim(bottom=0, top=1)
+        apply_percentile_yaxis(ax)
         ax.set_title(self.name or self.dist_type)
 
         pdf_ax.set_ylim(bottom=0)

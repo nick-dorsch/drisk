@@ -279,5 +279,17 @@ def test_discrete_plot_returns_axes() -> None:
     returned_ax = dist.plot(ax=ax)
 
     assert returned_ax is ax
+    assert ax.get_ylim() == pytest.approx((0, 1))
+    np.testing.assert_allclose(ax.get_yticks(), [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99])
+    assert [label.get_text() for label in ax.get_yticklabels()] == [
+        "p99",
+        "p90",
+        "p75",
+        "p50",
+        "p25",
+        "p10",
+        "p1",
+    ]
+    assert ax.get_ylabel() == ""
 
     plt.close(fig)
