@@ -144,6 +144,32 @@ def test_nodes_are_pydantic_serializable() -> None:
     assert restored.expected_value() == pytest.approx(tree.expected_value())
 
 
+def test_plot_tree_draws_node_shapes_and_branch_labels() -> None:
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle, Rectangle, RegularPolygon
+
+    tree = dr.DTree(
+        dr.DecisionNode(
+            "Choose",
+            {
+                "A": dr.ChanceNode("Chance", {"Win": (0.2, 10), "Lose": (0.8, 0)}),
+                "B": 1,
+            },
+        )
+    )
+    fig, ax = plt.subplots()
+
+    returned = tree.plot_tree(ax=ax, size=100, seed=123, precision=0)
+
+    assert returned is ax
+    assert any(isinstance(patch, Rectangle) for patch in ax.patches)
+    assert any(isinstance(patch, Circle) for patch in ax.patches)
+    assert any(isinstance(patch, RegularPolygon) for patch in ax.patches)
+    assert any("Win (20%)" in text.get_text() for text in ax.texts)
+
+    plt.close(fig)
+
+
 def test_chance_probabilities_must_sum_to_one() -> None:
     with pytest.raises(ValueError, match="sum to 1"):
         dr.ChanceNode("Bad", {"A": (0.2, 1), "B": (0.2, 0)})

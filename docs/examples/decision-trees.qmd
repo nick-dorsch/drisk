@@ -86,6 +86,17 @@ tree = dr.DTree(
 )
 ```
 
+## Visualize the tree
+
+`plot_tree()` draws the tree from top to bottom using conventional business decision
+-tree shapes: green squares for decisions, maroon circles for chance nodes, and blue
+triangles for outcomes.
+
+```{python}
+fig, ax = plt.subplots(figsize=(9, 6))
+tree.plot_tree(ax=ax, size=50_000, seed=42, precision=0)
+```
+
 ## Roll back the tree
 
 Rollback computes expected values from the terminal outcomes back to the root and marks
@@ -95,14 +106,6 @@ policy; it does not choose the best branch sample-by-sample with perfect informa
 ```{python}
 rollback = tree.rollback(size=50_000, seed=42, precision=0)
 rollback
-```
-
-```{python}
-selected = rollback[
-    (rollback["node"] == "Drill exploration well?") & (rollback["selected"])
-]["branch"].iloc[0]
-
-print(f"Selected decision: {selected}")
 ```
 
 ## Simulate the selected policy
@@ -131,13 +134,4 @@ ax.set_title("CDF for the selected decision policy")
 ax.set_xlabel("NPV")
 ax.legend()
 fig.tight_layout()
-```
-
-## Serialization
-
-Decision trees are Pydantic models, so they support `model_dump()` for inspection and
-serialization workflows.
-
-```{python}
-tree.model_dump()
 ```
