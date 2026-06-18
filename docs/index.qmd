@@ -14,6 +14,56 @@ distribution sampling, including correlated sampling using Copulas.
 
 This documentation site collects runnable examples and report-style walkthroughs.
 
+## Quick start
+
+```{python}
+import matplotlib.pyplot as plt
+
+import drisk as dr
+```
+
+Create a positive, right-skewed LogNormal distribution and plot it.
+
+```{python}
+volume = dr.LogNormal.elicit(
+    lower=800,
+    upper=1_500,
+    confidence=0.8,
+    name="Monthly sales volume",
+)
+
+volume.plot(color="steelblue")
+```
+
+Create a PERT distribution from a minimum, most-likely, and maximum estimate.
+
+```{python}
+margin = dr.PERT.elicit(
+    min=20,
+    mode=35,
+    max=60,
+    name="Unit margin",
+)
+
+margin.plot(color="darkorange")
+```
+
+Compose the distributions with ordinary Python arithmetic, then simulate the result.
+
+```{python}
+monthly_profit = volume * margin
+samples = monthly_profit.sample(size=50_000, seed=42)
+samples[:5]
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(8, 4.5))
+monthly_profit.plot(ax=ax, color="seagreen")
+ax.set_title("Simulated monthly profit")
+ax.set_xlabel("Monthly profit")
+fig.tight_layout()
+```
+
 ## Examples
 
 - [Working with Distributions](examples/distributions.qmd): the shared distribution API
@@ -21,6 +71,8 @@ for eliciting, fitting, plotting, and sampling.
 - [Composing Monte Carlo Models with Distribution
 Arithmetic](examples/mc-composition.qmd): a new product launch profit model built from
 elicited distributions and ordinary Python arithmetic.
+- [Combining Distributions with Mixtures](examples/mixtures.qmd): weighted blends of
+univariate distributions for processes with distinct regimes.
 - [Correlated Sampling with Copulas](examples/correlated-sampling.qmd): the same product
 launch model with correlated input sampling.
 - [Composing Discrete and Continuous Distributions](examples/equipment-failures.qmd):

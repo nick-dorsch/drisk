@@ -188,13 +188,16 @@ class MCModel(ArithmeticMixin):
         refresh: bool = False,
         threshold: float | int | None = None,
         percentiles: list[float | int] | tuple[float | int, ...] = (90, 50, 10),
+        precision: int | None = 2,
     ) -> pd.DataFrame:
         """
         Summarize simulated model outcomes as a tidy dataframe.
 
         The summary includes the mean, configurable percentiles, and optionally
-        the probability that simulated values exceed ``threshold``. Cached
-        samples are reused by default when available.
+        the probability that simulated values exceed ``threshold``. Values are
+        rounded to ``precision`` decimal places by default; pass
+        ``precision=None`` to return unrounded values. Cached samples are reused
+        by default when available.
         """
         samples = np.ravel(self._get_samples(size=size, seed=seed, refresh=refresh))
         values: dict[str, float] = {"mean": float(np.mean(samples))}
@@ -215,7 +218,10 @@ class MCModel(ArithmeticMixin):
         )
 
         index_label = self.name or "value"
-        return pd.DataFrame(values, index=pd.Index([index_label], name="metric"))
+        summary = pd.DataFrame(values, index=pd.Index([index_label], name="metric"))
+        if precision is not None:
+            summary = summary.round(precision)
+        return summary
 
     def plot(
         self,

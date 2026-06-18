@@ -40,7 +40,7 @@ def test_model_reuses_cached_samples_across_report_methods() -> None:
     model = x * 2
 
     samples = model.sample(size=1_000, seed=123)
-    summary = model.summary(threshold=0)
+    summary = model.summary(threshold=0, precision=None)
 
     assert summary.loc["value", "mean"] == pytest.approx(float(np.mean(samples)))
     assert summary.loc["value", "p(> 0)"] == pytest.approx(float(np.mean(samples > 0)))
@@ -137,6 +137,7 @@ def test_model_summary_returns_configurable_dataframe() -> None:
         seed=123,
         threshold=0,
         percentiles=(99, 90, 75, 50, 25, 10, 1),
+        precision=None,
     )
 
     assert "value" in summary.index
@@ -144,6 +145,28 @@ def test_model_summary_returns_configurable_dataframe() -> None:
     assert summary.loc["value", "p(> 0)"] == pytest.approx(
         np.mean(model.sample(size=1_000, seed=123) > 0)
     )
+
+
+def test_model_summary_rounds_to_default_precision() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = x * 2
+
+    summary = model.summary(size=1_000, seed=123, threshold=0)
+    unrounded = model.summary(size=1_000, seed=123, threshold=0, precision=None)
+
+    assert summary.loc["value", "mean"] == round(unrounded.loc["value", "mean"], 2)
+    assert summary.loc["value", "p90"] == round(unrounded.loc["value", "p90"], 2)
+    assert summary.loc["value", "p(> 0)"] == round(unrounded.loc["value", "p(> 0)"], 2)
+
+
+def test_model_summary_accepts_custom_precision() -> None:
+    x = dr.Normal.elicit(-1.0, 1.0)
+    model = x * 2
+
+    summary = model.summary(size=1_000, seed=123, precision=4)
+    unrounded = model.summary(size=1_000, seed=123, precision=None)
+
+    assert summary.loc["value", "mean"] == round(unrounded.loc["value", "mean"], 4)
 
 
 def test_model_plot_returns_axes_and_uses_default_x_quantile_range() -> None:
