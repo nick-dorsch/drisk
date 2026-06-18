@@ -1,6 +1,6 @@
-"""Decision tree support."""
+"""Decision analysis support."""
 
-from .base import (
+from .dtree import (
     ChanceBranch,
     ChanceNode,
     DecisionBranch,
