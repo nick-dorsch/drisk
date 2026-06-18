@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from drisk.arithmetic import ArithmeticMixin
-from drisk.copulas import Copula, GaussianCopula, SerializableCopula
+from drisk.copulas import Copula, GaussianCopula
 from drisk.correlations import CorrelationMatrix
 from drisk.distributions import ArrayLike, Distribution
 from drisk.random import SeedLike, get_rng
@@ -85,7 +85,7 @@ class MCModel(ArithmeticMixin, BaseModel):
     op: MCOperation
     operands: tuple[Operand, ...]
     name: str | None = None
-    copula: SerializableCopula | None = None
+    copula: Copula | None = None
 
     model_config = ConfigDict(extra="forbid")
 

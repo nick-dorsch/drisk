@@ -2,7 +2,6 @@
 
 from .base import Copula
 from .gaussian import GaussianCopula
-from .serializable import SerializableCopula
 from .student_t import StudentTCopula
 
-__all__ = ["Copula", "GaussianCopula", "SerializableCopula", "StudentTCopula"]
+__all__ = ["Copula", "GaussianCopula", "StudentTCopula"]

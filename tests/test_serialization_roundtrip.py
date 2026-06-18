@@ -88,7 +88,7 @@ class UnitBoundedContinuousHolder(BaseModel):
 
 
 class CopulaHolder(BaseModel):
-    value: dr.SerializableCopula
+    value: dr.Copula
 
 
 @pytest.mark.parametrize(
@@ -109,6 +109,14 @@ class CopulaHolder(BaseModel):
             dr.GaussianCopula.from_distributions_and_correlation(
                 [dr.Normal.elicit(0, 1), dr.Normal.elicit(10, 12)],
                 0.25,
+            ),
+        ),
+        (
+            CopulaHolder,
+            dr.StudentTCopula.from_distributions_and_correlation(
+                [dr.Normal.elicit(0, 1), dr.Normal.elicit(10, 12)],
+                0.25,
+                nu=5,
             ),
         ),
     ],
