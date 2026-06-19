@@ -1,6 +1,7 @@
 import numpy as np
+import pytest
 
-from drisk.distributions import ArrayLike, UvContinuous
+from drisk.distributions import ArrayLike, Distribution, UvContinuous
 from drisk.random import SeedLike
 
 
@@ -34,6 +35,14 @@ class ToyDistribution(UvContinuous):
         return None
 
     @property
+    def mean(self) -> float:
+        return float(self.params["value"])
+
+    @property
+    def variance(self) -> float:
+        return 0.0
+
+    @property
     def support(self) -> tuple[float, float]:
         return (0.0, 2.0)
 
@@ -47,6 +56,15 @@ def test_sample_replaces_rvs_and_rvs_aliases_sample() -> None:
 
     np.testing.assert_array_equal(dist.sample(size=3), np.array([3.0, 3.0, 3.0]))
     np.testing.assert_array_equal(dist.rvs(size=3), dist.sample(size=3))
+
+
+def test_distribution_enforces_summary_properties() -> None:
+    assert {"mean", "variance", "support"}.issubset(Distribution.__abstractmethods__)
+
+    dist = ToyDistribution.elicit(value=3.0)
+    assert dist.mean == pytest.approx(3.0)
+    assert dist.variance == pytest.approx(0.0)
+    assert dist.stdev == pytest.approx(0.0)
 
 
 def test_elicitation_params_are_nullable_and_serialized() -> None:

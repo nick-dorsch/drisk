@@ -27,5 +27,13 @@ description = "Run lint and tests"
 depends = ["lint", "test"]
 
 [tasks.docs]
-description = "Preview the Quarto documentation website"
+description = "Preview docs with live Quarto and quartodoc updates"
+depends = ["docs:quartodoc", "docs:preview"]
+
+[tasks."docs:preview"]
+description = "Run the Quarto documentation preview server"
 run = "uv run --group docs quarto preview docs"
+
+[tasks."docs:quartodoc"]
+description = "Watch source changes and rebuild quartodoc API pages"
+run = "uv run --group docs quartodoc build --config docs/_quarto.yml --watch"

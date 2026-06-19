@@ -190,3 +190,24 @@ class UvMixture(UvDistribution):
             *(component.x_range for component in self.components), strict=True
         )
         return (float(np.min(lowers)), float(np.max(uppers)))
+
+    @property
+    def mean(self) -> float:
+        """Weighted expected value of the component distributions."""
+        return float(
+            sum(
+                weight * component.mean
+                for weight, component in zip(self.weights, self.components, strict=True)
+            )
+        )
+
+    @property
+    def variance(self) -> float:
+        """Mixture variance using the law of total variance."""
+        mean = self.mean
+        return float(
+            sum(
+                weight * (component.variance + (component.mean - mean) ** 2)
+                for weight, component in zip(self.weights, self.components, strict=True)
+            )
+        )

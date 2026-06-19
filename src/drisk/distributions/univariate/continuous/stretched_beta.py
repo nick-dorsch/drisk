@@ -147,6 +147,25 @@ class StretchedBeta(UvBoundedContinuous):
         """Practical plotting range."""
         return self.support
 
+    @property
+    def mean(self) -> float:
+        """Expected value."""
+        lower = self.params["min"]
+        scale = self.params["max"] - lower
+        alpha = self.params["alpha"]
+        beta = self.params["beta"]
+        return float(lower + scale * alpha / (alpha + beta))
+
+    @property
+    def variance(self) -> float:
+        """Variance."""
+        scale = self.params["max"] - self.params["min"]
+        alpha = self.params["alpha"]
+        beta = self.params["beta"]
+        return float(
+            scale**2 * alpha * beta / ((alpha + beta) ** 2 * (alpha + beta + 1))
+        )
+
 
 class PERT(StretchedBeta):
     """PERT distribution as a stretched beta with concentration fixed at 4."""

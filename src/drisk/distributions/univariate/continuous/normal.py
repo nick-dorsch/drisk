@@ -97,6 +97,16 @@ class Normal(UvRealContinuous):
         return (-np.inf, np.inf)
 
     @property
+    def mean(self) -> float:
+        """Expected value."""
+        return float(self.params["mu"])
+
+    @property
+    def variance(self) -> float:
+        """Variance."""
+        return float(self.params["sigma"] ** 2)
+
+    @property
     def x_range(self) -> tuple[float, float]:
         """Practical plotting range."""
         return (float(self.ppf(0.0001)), float(self.ppf(0.9999)))

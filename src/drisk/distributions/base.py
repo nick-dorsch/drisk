@@ -98,6 +98,29 @@ class Distribution(ArithmeticMixin, BaseModel, ABC):
         """Fit a distribution to observed data."""
         pass
 
+    @property
+    @abstractmethod
+    def mean(self) -> float:
+        """Expected value of the distribution."""
+        pass
+
+    @property
+    @abstractmethod
+    def variance(self) -> float:
+        """Variance of the distribution."""
+        pass
+
+    @property
+    def stdev(self) -> float:
+        """Standard deviation of the distribution."""
+        return float(np.sqrt(self.variance))
+
+    @property
+    @abstractmethod
+    def support(self) -> tuple[float, float]:
+        """Distribution support as ``(lower, upper)``."""
+        pass
+
     @abstractmethod
     def plot(self, **kwargs: Any) -> Any:
         """Create a quicklook plot for the distribution."""

@@ -118,6 +118,20 @@ class LogNormal(UvPositiveContinuous):
         return (0.0, np.inf)
 
     @property
+    def mean(self) -> float:
+        """Expected value."""
+        mu = self.params["mu"]
+        sigma = self.params["sigma"]
+        return float(np.exp(mu + sigma**2 / 2))
+
+    @property
+    def variance(self) -> float:
+        """Variance."""
+        mu = self.params["mu"]
+        sigma = self.params["sigma"]
+        return float((np.exp(sigma**2) - 1) * np.exp(2 * mu + sigma**2))
+
+    @property
     def x_range(self) -> tuple[float, float]:
         """Practical plotting range."""
         return (float(self.ppf(0.0001)), float(self.ppf(0.9999)))
