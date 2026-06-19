@@ -1,12 +1,18 @@
 """Univariate discrete distribution base classes."""
 
 from abc import ABC
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
 
 from drisk.distributions.univariate.base import UvDistribution
-from drisk.summary import apply_percentile_yaxis
+from drisk.summary import (
+    DEFAULT_PERCENTILES,
+    apply_percentile_yaxis,
+    descending_percentile_y_positions,
+    plot_percentile_guides,
+)
 
 
 class UvDiscrete(UvDistribution, ABC):
@@ -23,6 +29,9 @@ class UvDiscrete(UvDistribution, ABC):
         show: bool = False,
         cdf_kwargs: dict[str, Any] | None = None,
         pmf_kwargs: dict[str, Any] | None = None,
+        percentile_guides: bool = True,
+        percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
+        percentile_guide_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -38,6 +47,8 @@ class UvDiscrete(UvDistribution, ABC):
 
             _, ax = plt.subplots()
 
+        from matplotlib.ticker import MaxNLocator
+
         x_min, x_max = self.x_range
         x = np.arange(np.ceil(x_min), np.floor(x_max) + 1, dtype=int)
         lower, upper = self.support
@@ -48,6 +59,15 @@ class UvDiscrete(UvDistribution, ABC):
 
         line_kwargs = {**(cdf_kwargs or {}), **kwargs}
         (cdf_line,) = ax.step(x, cdf, where="post", **line_kwargs)
+        if percentile_guides:
+            guide_x = self.ppf(descending_percentile_y_positions(percentiles))
+            plot_percentile_guides(
+                ax,
+                guide_x,
+                percentiles,
+                color=cdf_line.get_color(),
+                line_kwargs=percentile_guide_kwargs,
+            )
 
         pmf_ax = ax.twinx()
         bar_kwargs = {
@@ -59,7 +79,8 @@ class UvDiscrete(UvDistribution, ABC):
         pmf_ax.bar(x, pmf, width=0.8, **bar_kwargs)
 
         ax.set_xlabel(self.name or "x")
-        apply_percentile_yaxis(ax)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        apply_percentile_yaxis(ax, percentiles)
         ax.set_title(self.name or self.dist_type)
 
         pmf_ax.set_ylim(bottom=0)

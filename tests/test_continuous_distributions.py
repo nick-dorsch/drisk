@@ -109,6 +109,26 @@ def test_continuous_plot_returns_axes() -> None:
         "p1",
     ]
     assert ax.get_ylabel() == ""
+    assert len(ax.collections) == 1
+    guide_segments = ax.collections[0].get_segments()
+    assert len(guide_segments) == 7
+    np.testing.assert_allclose(
+        [segment[1, 1] for segment in guide_segments],
+        [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99],
+    )
+
+    plt.close(fig)
+
+
+def test_continuous_plot_can_hide_percentile_guides() -> None:
+    import matplotlib.pyplot as plt
+
+    dist = Normal.elicit(lower=10, upper=20, confidence=0.8)
+    fig, ax = plt.subplots()
+
+    dist.plot(ax=ax, percentile_guides=False)
+
+    assert len(ax.collections) == 0
 
     plt.close(fig)
 

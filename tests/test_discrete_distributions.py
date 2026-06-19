@@ -291,5 +291,13 @@ def test_discrete_plot_returns_axes() -> None:
         "p1",
     ]
     assert ax.get_ylabel() == ""
+    np.testing.assert_allclose(ax.get_xticks(), np.round(ax.get_xticks()))
+    assert len(ax.collections) == 1
+    guide_segments = ax.collections[0].get_segments()
+    assert len(guide_segments) == 7
+    np.testing.assert_allclose(
+        [segment[1, 1] for segment in guide_segments],
+        [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99],
+    )
 
     plt.close(fig)

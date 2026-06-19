@@ -1,12 +1,18 @@
 """Univariate continuous distribution base classes."""
 
 from abc import ABC
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
 
 from drisk.distributions.univariate.base import UvDistribution
-from drisk.summary import apply_percentile_yaxis
+from drisk.summary import (
+    DEFAULT_PERCENTILES,
+    apply_percentile_yaxis,
+    descending_percentile_y_positions,
+    plot_percentile_guides,
+)
 
 
 class UvContinuous(UvDistribution, ABC):
@@ -20,6 +26,9 @@ class UvContinuous(UvDistribution, ABC):
         show: bool = False,
         cdf_kwargs: dict[str, Any] | None = None,
         pdf_kwargs: dict[str, Any] | None = None,
+        percentile_guides: bool = True,
+        percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
+        percentile_guide_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -42,6 +51,15 @@ class UvContinuous(UvDistribution, ABC):
 
         line_kwargs = {**(cdf_kwargs or {}), **kwargs}
         (cdf_line,) = ax.plot(x, cdf, **line_kwargs)
+        if percentile_guides:
+            guide_x = self.ppf(descending_percentile_y_positions(percentiles))
+            plot_percentile_guides(
+                ax,
+                guide_x,
+                percentiles,
+                color=cdf_line.get_color(),
+                line_kwargs=percentile_guide_kwargs,
+            )
 
         pdf_ax = ax.twinx()
         fill_kwargs = {
@@ -53,7 +71,7 @@ class UvContinuous(UvDistribution, ABC):
         pdf_ax.fill_between(x, 0, pdf, **fill_kwargs)
 
         ax.set_xlabel(self.name or "x")
-        apply_percentile_yaxis(ax)
+        apply_percentile_yaxis(ax, percentiles)
         ax.set_title(self.name or self.dist_type)
 
         pdf_ax.set_ylim(bottom=0)

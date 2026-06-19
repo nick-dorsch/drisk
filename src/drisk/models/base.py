@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import StrEnum
 from typing import Any, Self
 
@@ -20,7 +20,9 @@ from drisk.summary import (
     apply_percentile_yaxis,
     conditional_stat_label,
     descending_percentile_values,
+    descending_percentile_y_positions,
     percentile_label,
+    plot_percentile_guides,
     threshold_probability_label,
 )
 
@@ -394,6 +396,9 @@ class MCModel(ArithmeticMixin, BaseModel):
         x_quantile_range: tuple[float, float] | None = (0.001, 0.999),
         ecdf_kwargs: dict[str, Any] | None = None,
         hist_kwargs: dict[str, Any] | None = None,
+        percentile_guides: bool = True,
+        percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
+        percentile_guide_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -418,6 +423,17 @@ class MCModel(ArithmeticMixin, BaseModel):
 
         line_kwargs = {**(ecdf_kwargs or {}), **kwargs}
         (ecdf_line,) = ax.plot(samples, ecdf, **line_kwargs)
+        if percentile_guides:
+            guide_x = np.quantile(
+                samples, descending_percentile_y_positions(percentiles)
+            )
+            plot_percentile_guides(
+                ax,
+                guide_x,
+                percentiles,
+                color=ecdf_line.get_color(),
+                line_kwargs=percentile_guide_kwargs,
+            )
 
         hist_ax = ax.twinx()
         fill_kwargs = {
@@ -431,7 +447,7 @@ class MCModel(ArithmeticMixin, BaseModel):
             ax.set_xlim(*np.quantile(samples, x_quantile_range))
 
         ax.set_xlabel(self.name or "value")
-        apply_percentile_yaxis(ax)
+        apply_percentile_yaxis(ax, percentiles)
         ax.set_title(self.name or "Monte Carlo model")
 
         hist_ax.set_ylim(bottom=0)
