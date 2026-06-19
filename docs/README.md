@@ -8,12 +8,14 @@ Quarto is distributed as a CLI tool rather than a normal Python package dependen
 
 ```bash
 uv sync --group docs
+(cd docs && uv run quartodoc build)
 uv run quarto render docs
 ```
 
 To preview locally while editing:
 
 ```bash
+(cd docs && uv run quartodoc build --watch)
 uv run quarto preview docs
 ```
 

@@ -38,6 +38,10 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
+      - name: Build API reference
+        working-directory: docs
+        run: uv run quartodoc build
+
       - name: Render Quarto site
         run: uv run quarto render docs
 

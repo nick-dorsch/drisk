@@ -2,6 +2,9 @@ project:
   type: website
   output-dir: _site
 
+metadata-files:
+  - reference/_sidebar.yml
+
 website:
   title: "drisk"
   site-url: "https://nick-dorsch.github.io/drisk/"
@@ -10,6 +13,8 @@ website:
     left:
       - href: index.qmd
         text: Home
+      - href: reference/index.qmd
+        text: Reference
       - text: Examples
         menu:
           - href: examples/distributions.qmd
@@ -33,9 +38,80 @@ format:
   html:
     theme: journal
     toc: true
+    toc-depth: 4
     code-fold: false
     code-copy: true
     number-sections: false
+    css:
+      - reference/_styles-quartodoc.css
+
+quartodoc:
+  package: drisk
+  style: pkgdown
+  dir: reference
+  sidebar: reference/_sidebar.yml
+  css: reference/_styles-quartodoc.css
+  parser: google
+  dynamic: true
+  sections:
+    - title: Distributions
+      desc: Core distribution interfaces and implementations.
+      contents:
+        - Distribution
+        - Normal
+        - LogNormal
+        - LogitNormal
+        - Beta
+        - StretchedBeta
+        - PERT
+        - Gamma
+        - Exponential
+        - Bernoulli
+        - Binomial
+        - Poisson
+        - Geometric
+        - NegativeBinomial
+        - UvMixture
+    - title: Distribution domains
+      desc: Marker classes for distribution domain semantics.
+      contents:
+        - UvDistribution
+        - UvContinuous
+        - UvRealContinuous
+        - UvPositiveContinuous
+        - UvBoundedContinuous
+        - UvUnitBoundedContinuous
+        - UvDiscrete
+        - UvFiniteDiscrete
+        - UvCountDiscrete
+    - title: Correlation and copulas
+      desc: Tools for correlated sampling.
+      contents:
+        - CorrelationMatrix
+        - Copula
+        - GaussianCopula
+        - StudentTCopula
+    - title: Monte Carlo models
+      desc: Composable model helpers.
+      contents:
+        - MCModel
+        - MCOperation
+        - where
+    - title: Sensitivity analysis
+      desc: One-at-a-time sensitivity tooling.
+      contents:
+        - OneAtATimeSensitivity
+        - one_at_a_time
+    - title: Decision trees
+      desc: Decision tree primitives.
+      contents:
+        - DTree
+        - DTreeNode
+        - DecisionNode
+        - ChanceNode
+        - OutcomeNode
+        - DecisionBranch
+        - ChanceBranch
 
 execute:
   warning: false

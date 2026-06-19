@@ -9,6 +9,8 @@ wheels/
 # Quarto-generated files
 docs/_site/
 docs/.quarto/
+docs/objects.json
+docs/reference/
 
 # Virtual environments
 .venv
