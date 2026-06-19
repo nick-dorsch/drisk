@@ -41,6 +41,7 @@ from .distributions import (
     UvUnitBoundedContinuous,
 )
 from .models import MCModel, MCOperation, where
+from .sensitivity import OneAtATimeSensitivity, one_at_a_time
 
 __all__ = [
     "ArrayLike",
@@ -68,7 +69,9 @@ __all__ = [
     "UvMixture",
     "NegativeBinomial",
     "Normal",
+    "OneAtATimeSensitivity",
     "OutcomeNode",
+    "one_at_a_time",
     "PERT",
     "Poisson",
     "StudentTCopula",

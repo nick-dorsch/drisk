@@ -66,5 +66,7 @@ def test_correlation_matrix_plot_returns_annotated_heatmap() -> None:
     assert returned_ax is ax
     assert len(ax.images) == 1
     assert len(ax.texts) == 4
+    assert [tick.get_text() for tick in ax.get_xticklabels()] == ["a", "b"]
+    assert all(tick.get_rotation() == 90 for tick in ax.get_xticklabels())
 
     plt.close(ax.figure)

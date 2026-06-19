@@ -20,6 +20,7 @@ as a composable Monte Carlo model: calculate the success-case volume, then use
 
 ```{python}
 import matplotlib.pyplot as plt
+import numpy as np
 from pydantic import BaseModel, Field
 
 import drisk as dr
@@ -55,14 +56,13 @@ class Reservoir(BaseModel):
     p_success: float = Field(ge=0, le=1)
     phi: dr.LogitNormal
     sw: dr.LogitNormal
-    area_km2: dr.PERT
+    area_km2: dr.LogNormal
     net_m: dr.PERT
     bo: dr.LogNormal
 
-    def oil_mmbbl(self) -> dr.MCModel:
-        """Build a risked oil-in-place model for this reservoir."""
-        success = dr.Bernoulli.elicit(self.p_success, name=f"{self.name} success")
-        success_case = (
+    def success_case_oil_mmbbl(self) -> dr.MCModel:
+        """Build a success-case oil-in-place model for this reservoir."""
+        return (
             self.area_km2
             * KM2_TO_M2
             * self.net_m
@@ -72,45 +72,60 @@ class Reservoir(BaseModel):
             * M3_TO_BBL
             / 1e6
         )
-        return dr.where(success, success_case, 0.0, name=self.name)
+
+    def oil_mmbbl(self) -> dr.MCModel:
+        """Build a risked oil-in-place model for this reservoir."""
+        success = dr.Bernoulli.elicit(self.p_success, name=f"{self.name} success")
+        return dr.where(success, self.success_case_oil_mmbbl(), 0.0, name=self.name)
+
+    def expected_oil_mmbbl(self) -> dr.MCModel:
+        """Build an expected-value oil-in-place model for sensitivity analysis."""
+        return self.p_success * self.success_case_oil_mmbbl()
 ```
 
 ## Elicit reservoir inputs
 
 We use logit-normal distributions for proportions bounded between zero and one, PERT
-distributions for min/mode/max geological estimates, and a lognormal distribution for
-positive-skew uncertainty in `bo`.
+distributions for min/mode/max net-pay estimates, and lognormal distributions for
+positive-skew uncertainty in mapped area and `bo`.
 
 ```{python}
 shallow = Reservoir(
-    name="Shallow sand",
-    p_success=0.55,
+    name="shallow",
+    p_success=0.7,
     phi=dr.LogitNormal.elicit(0.18, 0.28, name="shallow phi"),
     sw=dr.LogitNormal.elicit(0.22, 0.38, name="shallow sw"),
-    area_km2=dr.PERT.elicit(8, 14, 24, name="shallow area km2"),
+    area_km2=dr.LogNormal.elicit(8, 24, name="shallow area km2"),
     net_m=dr.PERT.elicit(8, 14, 22, name="shallow net m"),
     bo=dr.LogNormal.elicit(1.15, 1.35, name="shallow Bo"),
 )
 
 deep = Reservoir(
-    name="Deep channel",
+    name="deep",
     p_success=0.32,
     phi=dr.LogitNormal.elicit(0.12, 0.22, name="deep phi"),
-    sw=dr.LogitNormal.elicit(0.25, 0.45, name="deep sw"),
-    area_km2=dr.PERT.elicit(12, 26, 48, name="deep area km2"),
+    sw=dr.LogitNormal.elicit(0.25, 0.40, name="deep sw"),
+    area_km2=dr.LogNormal.elicit(12, 48, name="deep area km2"),
     net_m=dr.PERT.elicit(10, 22, 38, name="deep net m"),
     bo=dr.LogNormal.elicit(1.25, 1.55, name="deep Bo"),
 )
 
 flank = Reservoir(
-    name="Flank terrace",
-    p_success=0.22,
+    name="flank",
+    p_success=0.4,
     phi=dr.LogitNormal.elicit(0.10, 0.20, name="flank phi"),
-    sw=dr.LogitNormal.elicit(0.30, 0.55, name="flank sw"),
-    area_km2=dr.PERT.elicit(5, 12, 30, name="flank area km2"),
+    sw=dr.LogitNormal.elicit(0.25, 0.45, name="flank sw"),
+    area_km2=dr.LogNormal.elicit(10, 50, name="flank area km2"),
     net_m=dr.PERT.elicit(4, 9, 18, name="flank net m"),
     bo=dr.LogNormal.elicit(1.20, 1.50, name="flank Bo"),
 )
+```
+
+Each reservoir variable can be conveniently plotting like any other distribution, for
+example:
+
+```{python}
+flank.net_m.plot(color="salmon")
 ```
 
 ## Compose the prospect model
@@ -119,8 +134,75 @@ A prospect is just the sum of the risked reservoir models.
 
 ```{python}
 prospect = shallow.oil_mmbbl() + deep.oil_mmbbl() + flank.oil_mmbbl()
-prospect.name = "Prospect oil in place, MMbbl"
+prospect.name = "STOIIP MMbbl"
+```
 
+## Add cross-input correlations
+
+By default, distribution leaves are sampled independently. Use `.correlate(...)` to add
+a Gaussian copula across the whole composed model. Here we use:
+
+- strong positive correlation on sand success (capturing risk dependency),
+- weak positive cross-reservoir correlation between porosity variables,
+- stronger positive correlation between porosity and net pay within each reservoir, and
+- negative correlations between area and sw within each reservoir.
+
+All other pairwise correlations are left at zero.
+
+```{python}
+def prospect_correlation_matrix(model: dr.MCModel) -> np.ndarray:
+    """Build a correlation matrix aligned to model.distributions() order."""
+    distributions = model.distributions()
+    names = [distribution.name for distribution in distributions]
+    correlation = np.eye(len(distributions))
+
+    def set_correlation(left: str, right: str, value: float) -> None:
+        i = names.index(left)
+        j = names.index(right)
+        correlation[i, j] = value
+        correlation[j, i] = value
+
+    porosity_names = ["shallow phi", "deep phi", "flank phi"]
+    for i, left in enumerate(porosity_names):
+        for right in porosity_names[i + 1:]:
+            set_correlation(left, right, 0.35)
+
+    success_names = [
+        "shallow success", 
+        "deep success", 
+        "flank success"
+    ]
+    for i, left in enumerate(success_names):
+        for right in success_names[i + 1:]:
+            set_correlation(left, right, 0.75)
+
+    set_correlation("shallow phi", "shallow net m", 0.5)
+    set_correlation("shallow area km2", "shallow sw", -0.5)
+    set_correlation("shallow net m", "shallow sw", -0.5)
+
+    set_correlation("deep phi", "deep net m", 0.5)
+    set_correlation("deep area km2", "deep sw", -0.5)
+    set_correlation("deep net m", "deep sw", -0.5)
+
+    set_correlation("flank phi", "flank net m", 0.5)
+    set_correlation("flank area km2", "flank sw", -0.5)
+    set_correlation("flank net m", "flank sw", -0.5)
+
+    return correlation
+
+
+prospect.correlate(prospect_correlation_matrix(prospect))
+
+# Plot matrix
+fig, ax = plt.subplots(figsize=(12, 10))
+prospect.copula.corr_matrix.plot(
+    labels=[d.name for d in prospect.distributions()],
+    ax=ax
+)
+fig.tight_layout()
+```
+
+```{python}
 summary = prospect.summary(
     size=50_000, 
     seed=42, 
@@ -138,7 +220,7 @@ tail from combinations of success and larger volumetric outcomes.
 
 ```{python}
 fig, ax = plt.subplots(figsize=(8, 4.5))
-prospect.plot(ax=ax, size=50_000, seed=42, color="#4C78A8")
+prospect.plot(ax=ax, size=50_000, seed=42, color="green")
 
 ax.set_title("Risked prospect oil in place")
 ax.set_xlabel("Oil in place, MMbbl")
@@ -146,7 +228,29 @@ ax.set_xlabel("Oil in place, MMbbl")
 fig.tight_layout()
 ```
 
-## Serialization
+## Sensitivity tornado
 
-Both the input model and the composed Monte Carlo expression are serializable with
-Pydantic.
+A one-at-a-time sensitivity tornado helps identify which input distributions drive the
+median prospect outcome. Each variable is varied through percentile bands while the
+other inputs are held at their median values. Green bars indicate upside relative to the
+median result, while red bars indicate downside.
+
+For this example, we plot sensitivity on an expected-value version of the prospect model:
+each reservoir's success-case volume is multiplied by its chance of success. This avoids
+hiding deep and flank volumetric sensitivities when their Bernoulli success variables are
+fixed at their median failure outcome.
+
+```{python}
+expected_prospect = (
+    shallow.expected_oil_mmbbl()
+    + deep.expected_oil_mmbbl()
+    + flank.expected_oil_mmbbl()
+)
+expected_prospect.name = "Expected prospect oil in place, MMbbl"
+
+fig, ax = plt.subplots(figsize=(8, 7))
+expected_prospect.plot_sensitivity(ax=ax)
+
+ax.set_xlabel("Oil in place, MMbbl")
+fig.tight_layout()
+```

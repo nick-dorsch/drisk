@@ -39,16 +39,51 @@ def descending_percentile_values(
     }
 
 
+def descending_percentile_y_positions(
+    percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
+) -> np.ndarray:
+    """Return CDF/ECDF y-positions for descending percentile labels."""
+    percentile_values = np.array([float(percentile) for percentile in percentiles])
+    if np.any((percentile_values < 0) | (percentile_values > 100)):
+        raise ValueError("percentiles must be between 0 and 100")
+    return (100 - percentile_values) / 100
+
+
 def apply_percentile_yaxis(
     ax: Any,
     percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
 ) -> None:
     """Apply descending percentile tick labels to a cumulative-probability y-axis."""
-    tick_positions = [(100 - float(percentile)) / 100 for percentile in percentiles]
+    tick_positions = descending_percentile_y_positions(percentiles)
     tick_labels = [percentile_label(percentile) for percentile in percentiles]
     ax.set_yticks(tick_positions, labels=tick_labels)
     ax.set_ylabel("")
     ax.set_ylim(bottom=0, top=1)
+
+
+def plot_percentile_guides(
+    ax: Any,
+    x_values: Sequence[float | int] | np.ndarray,
+    percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
+    *,
+    color: Any = None,
+    line_kwargs: dict[str, Any] | None = None,
+) -> Any:
+    """Plot vertical guides from the x-axis to percentile y-positions."""
+    y_values = descending_percentile_y_positions(percentiles)
+    guide_kwargs = {
+        "linestyles": "--",
+        "linewidth": 1,
+        "alpha": 0.7,
+        **(line_kwargs or {}),
+    }
+    if (
+        color is not None
+        and "colors" not in guide_kwargs
+        and "color" not in guide_kwargs
+    ):
+        guide_kwargs["colors"] = color
+    return ax.vlines(x_values, 0, y_values, **guide_kwargs)
 
 
 def threshold_condition_label(threshold: float | int) -> str:

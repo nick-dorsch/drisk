@@ -59,20 +59,3 @@ samples[:5]
 ```{python}
 monthly_profit.plot(color="seagreen")
 ```
-
-## Examples
-
-- [Working with Distributions](examples/distributions.qmd): the shared distribution API
-for eliciting, fitting, plotting, and sampling.
-- [Composing Monte Carlo Models with Distribution
-Arithmetic](examples/mc-composition.qmd): a new product launch profit model built from
-elicited distributions and ordinary Python arithmetic.
-- [Combining Distributions with Mixtures](examples/mixtures.qmd): weighted blends of
-univariate distributions for processes with distinct regimes.
-- [Composing Discrete and Continuous Distributions](examples/equipment-failures.qmd):
-an equipment-failure planning model combining a Poisson event count with continuous
-average repair cost and downtime distributions.
-- [Correlated Sampling with Copulas](examples/correlated-sampling.qmd): the same product
-launch model with correlated input sampling.
-- [Decision Trees for Business Decisions](examples/decision-trees.qmd): rollback
-analysis for sequential business choices with uncertain outcomes.

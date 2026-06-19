@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import StrEnum
 from typing import Any, Self
 
@@ -20,7 +20,9 @@ from drisk.summary import (
     apply_percentile_yaxis,
     conditional_stat_label,
     descending_percentile_values,
+    descending_percentile_y_positions,
     percentile_label,
+    plot_percentile_guides,
     threshold_probability_label,
 )
 
@@ -315,6 +317,73 @@ class MCModel(ArithmeticMixin, BaseModel):
             summary = summary.round(precision)
         return summary
 
+    def sensitivity_analysis(
+        self,
+        *,
+        percentiles: list[float | int] | tuple[float | int, ...] = DEFAULT_PERCENTILES,
+        center_percentile: float | int = 50,
+        precision: int | None = 2,
+    ) -> Any:
+        """Return a serializable one-at-a-time sensitivity analysis object."""
+        from drisk.sensitivity import OneAtATimeSensitivity
+
+        return OneAtATimeSensitivity(
+            self,
+            percentiles=tuple(percentiles),
+            center_percentile=center_percentile,
+            precision=precision,
+        )
+
+    def sensitivity(
+        self,
+        *,
+        percentiles: list[float | int] | tuple[float | int, ...] = DEFAULT_PERCENTILES,
+        center_percentile: float | int = 50,
+        precision: int | None = 2,
+    ) -> pd.DataFrame:
+        """
+        Run one-at-a-time sensitivity analysis over distribution leaves.
+
+        The baseline fixes every distribution leaf to ``center_percentile``.
+        Each distribution is then varied through ``percentiles`` while all other
+        distribution leaves remain fixed at the centre value. Constants are not
+        included as sensitivity variables.
+        """
+        return self.sensitivity_analysis(
+            percentiles=percentiles,
+            center_percentile=center_percentile,
+            precision=precision,
+        ).evaluate()
+
+    def plot_sensitivity(
+        self,
+        ax: Any = None,
+        *,
+        percentiles: list[float | int] | tuple[float | int, ...] = DEFAULT_PERCENTILES,
+        center_percentile: float | int = 50,
+        precision: int | None = 2,
+        show: bool = False,
+        positive_color: str = "seagreen",
+        negative_color: str = "firebrick",
+        baseline_kwargs: dict[str, Any] | None = None,
+        bar_kwargs: dict[str, Any] | None = None,
+        line_kwargs: dict[str, Any] | None = None,
+    ) -> Any:
+        """Plot a one-at-a-time sensitivity tornado chart for this model."""
+        return self.sensitivity_analysis(
+            percentiles=percentiles,
+            center_percentile=center_percentile,
+            precision=precision,
+        ).plot(
+            ax=ax,
+            show=show,
+            positive_color=positive_color,
+            negative_color=negative_color,
+            baseline_kwargs=baseline_kwargs,
+            bar_kwargs=bar_kwargs,
+            line_kwargs=line_kwargs,
+        )
+
     def plot(
         self,
         ax: Any = None,
@@ -327,6 +396,9 @@ class MCModel(ArithmeticMixin, BaseModel):
         x_quantile_range: tuple[float, float] | None = (0.001, 0.999),
         ecdf_kwargs: dict[str, Any] | None = None,
         hist_kwargs: dict[str, Any] | None = None,
+        percentile_guides: bool = True,
+        percentiles: Sequence[float | int] = DEFAULT_PERCENTILES,
+        percentile_guide_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -351,6 +423,17 @@ class MCModel(ArithmeticMixin, BaseModel):
 
         line_kwargs = {**(ecdf_kwargs or {}), **kwargs}
         (ecdf_line,) = ax.plot(samples, ecdf, **line_kwargs)
+        if percentile_guides:
+            guide_x = np.quantile(
+                samples, descending_percentile_y_positions(percentiles)
+            )
+            plot_percentile_guides(
+                ax,
+                guide_x,
+                percentiles,
+                color=ecdf_line.get_color(),
+                line_kwargs=percentile_guide_kwargs,
+            )
 
         hist_ax = ax.twinx()
         fill_kwargs = {
@@ -364,7 +447,7 @@ class MCModel(ArithmeticMixin, BaseModel):
             ax.set_xlim(*np.quantile(samples, x_quantile_range))
 
         ax.set_xlabel(self.name or "value")
-        apply_percentile_yaxis(ax)
+        apply_percentile_yaxis(ax, percentiles)
         ax.set_title(self.name or "Monte Carlo model")
 
         hist_ax.set_ylim(bottom=0)

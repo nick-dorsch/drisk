@@ -16,6 +16,8 @@ website:
             text: Working with distributions
           - href: examples/mc-composition.qmd
             text: Monte Carlo composition
+          - href: examples/sensitivity-analysis.qmd
+            text: Sensitivity analysis
           - href: examples/mixtures.qmd
             text: Distribution mixtures
           - href: examples/correlated-sampling.qmd

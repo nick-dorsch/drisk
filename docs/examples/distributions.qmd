@@ -91,4 +91,3 @@ fitted.plot(color="darkorange")
 ```{python}
 fitted.sample(size=5, seed=123)
 ```
-

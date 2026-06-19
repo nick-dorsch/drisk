@@ -118,7 +118,10 @@ class CorrelationMatrix(BaseModel):
         )
 
         tick_labels = labels if labels is not None else [str(i) for i in range(n)]
-        ax.set_xticks([])
+        ax.set_xticks(np.arange(n), labels=tick_labels, rotation=90)
+        ax.tick_params(
+            axis="x", bottom=True, labelbottom=True, top=False, labeltop=False
+        )
         ax.set_yticks(np.arange(n), labels=tick_labels)
         ax.grid(False)
         ax.set_title("Correlation matrix")
