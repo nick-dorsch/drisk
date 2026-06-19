@@ -138,6 +138,27 @@ class LogitNormal(UvUnitBoundedContinuous):
         return (0.0, 1.0)
 
     @property
+    def mean(self) -> float:
+        """Expected value, evaluated by numerical integration."""
+        return float(
+            stats.norm.expect(
+                expit,
+                loc=self.params["mu"],
+                scale=self.params["sigma"],
+            )
+        )
+
+    @property
+    def variance(self) -> float:
+        """Variance, evaluated by numerical integration."""
+        second_moment = stats.norm.expect(
+            lambda z: expit(z) ** 2,
+            loc=self.params["mu"],
+            scale=self.params["sigma"],
+        )
+        return float(second_moment - self.mean**2)
+
+    @property
     def x_range(self) -> tuple[float, float]:
         """Practical plotting range."""
         return (0.0, 1.0)

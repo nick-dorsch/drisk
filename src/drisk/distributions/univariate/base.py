@@ -29,6 +29,12 @@ class UvDistribution(Distribution, ABC):
 
     @property
     @abstractmethod
+    def variance(self) -> float:
+        """Variance of the distribution."""
+        pass
+
+    @property
+    @abstractmethod
     def support(self) -> tuple[float, float]:
         """Distribution support as ``(lower, upper)``."""
         pass
