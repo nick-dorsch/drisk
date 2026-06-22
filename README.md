@@ -37,7 +37,7 @@ uv add drisk
 import drisk as dr
 
 # Elicit a distribution from intuitive inputs.
-dist = dr.LogitNormal.elicit(low=0.1, high=0.25)
+dist = dr.LogitNormal.elicit(lower=0.1, upper=0.25)
 
 # Draw Monte Carlo samples.
 samples = dist.sample(1_000)
