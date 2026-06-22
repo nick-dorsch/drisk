@@ -1,6 +1,6 @@
 ---
-title: "Prospect Evaluation with Monte Carlo Composition"
-subtitle: "Risked oil-in-place across multiple reservoirs"
+title: "Oil and Gas Prospect Evaluation"
+subtitle: "Risked oil-in-place across multiple correlated reservoirs"
 ---
 
 ## Motivation

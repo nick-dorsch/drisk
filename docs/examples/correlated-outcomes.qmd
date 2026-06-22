@@ -1,0 +1,207 @@
+---
+title: "Correlated Discrete Outcomes"
+subtitle: "Bernoulli race wins with a Gaussian copula"
+---
+
+## Motivation
+
+A trainer is planning a short campaign for one horse across several races. Each race has
+its own win probability because the field, distance, and track conditions differ. If we
+sample each race independently, we assume the horse's result in one race tells us nothing
+about its likely result in the others.
+
+That is often too strong. A horse may have an unobserved underlying form, soundness, or
+capacity that persists across the campaign. If the horse is better than expected, several
+wins become more likely; if it is off-form, several losses become more likely. The races
+are not perfectly locked together, but they are also not independent.
+
+A Gaussian copula with Bernoulli marginals is a compact way to represent this: keep the
+elicited probability for each race, then add positive dependence between the binary win
+outcomes.
+
+```{python}
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import drisk as dr
+```
+
+## Elicit race-level win probabilities
+
+Each Bernoulli distribution represents the event "our horse wins this race".
+
+```{python}
+race_inputs = [
+    ("Sprint prep", 0.18),
+    ("Allowance", 0.22),
+    ("Turf mile", 0.15),
+    ("Local stakes", 0.28),
+    ("Dirt route", 0.12),
+    ("Handicap", 0.20),
+    ("Feature stakes", 0.25),
+    ("Final sprint", 0.16),
+]
+
+race_wins = [
+    dr.Bernoulli.elicit(p, name=name)
+    for name, p in race_inputs
+]
+
+pd.DataFrame(race_inputs, columns=["race", "p_win"])
+```
+
+## Independent campaign simulation
+
+First simulate the campaign as if the eight race outcomes were independent.
+
+```{python}
+size = 50_000
+rng = np.random.default_rng(42)
+
+independent_race_samples = np.vstack([
+    race.sample(size=size, seed=rng)
+    for race in race_wins
+])
+independent_total_wins = independent_race_samples.sum(axis=0)
+
+independent_total_wins.mean()
+```
+
+The expected number of wins is just the sum of the race probabilities, but the shape of
+the total-win distribution depends strongly on the independence assumption.
+
+## Add correlated Bernoulli outcomes
+
+Now create a Gaussian copula over the same Bernoulli marginals. The correlation below is
+a **latent Gaussian correlation**: it controls dependence before each marginal is mapped
+through its Bernoulli inverse CDF. The observed Pearson correlation between 0/1 race
+outcomes will usually be smaller, especially when event probabilities are far from 50%.
+
+```{python}
+latent_form_correlation = 0.85
+n_races = len(race_wins)
+
+correlation_matrix = np.full((n_races, n_races), latent_form_correlation)
+np.fill_diagonal(correlation_matrix, 1.0)
+
+form_copula = dr.GaussianCopula(
+    distributions=tuple(race_wins),
+    corr_matrix=dr.CorrelationMatrix.from_numpy(correlation_matrix),
+)
+
+correlated_race_samples = form_copula.sample(size=size, seed=42)
+correlated_total_wins = correlated_race_samples.sum(axis=0)
+
+correlated_total_wins.mean()
+```
+
+The marginal win probabilities are preserved.
+
+```{python}
+pd.DataFrame(
+    {
+        "race": [race.name for race in race_wins],
+        "elicited_p_win": [race.params["p"] for race in race_wins],
+        "simulated_p_win": correlated_race_samples.mean(axis=1),
+    }
+)
+```
+
+But the outcomes are no longer independent.
+
+```{python}
+observed_corr = np.corrcoef(correlated_race_samples)
+off_diagonal = observed_corr[np.triu_indices_from(observed_corr, k=1)]
+
+print(f"Latent Gaussian correlation: {latent_form_correlation:.2f}")
+print(f"Mean observed Bernoulli correlation: {off_diagonal.mean():.2f}")
+```
+
+## Compare campaign win counts
+
+Positive dependence moves probability mass toward more clustered outcomes: more campaigns
+with no wins, and more campaigns with several wins. The average number of wins is almost
+unchanged because the individual race probabilities are unchanged.
+
+```{python}
+def win_count_distribution(samples: np.ndarray, n: int) -> np.ndarray:
+    return np.bincount(samples.astype(int), minlength=n + 1)[: n + 1] / samples.size
+
+comparison = pd.DataFrame(
+    {
+        "independent": win_count_distribution(independent_total_wins, n_races),
+        "correlated": win_count_distribution(correlated_total_wins, n_races),
+    },
+    index=pd.Index(range(n_races + 1), name="total wins"),
+)
+
+comparison
+```
+
+```{python}
+summary = pd.DataFrame(
+    {
+        "independent": {
+            "mean wins": independent_total_wins.mean(),
+            "p(no wins)": np.mean(independent_total_wins == 0),
+            "p(3+ wins)": np.mean(independent_total_wins >= 3),
+        },
+        "correlated": {
+            "mean wins": correlated_total_wins.mean(),
+            "p(no wins)": np.mean(correlated_total_wins == 0),
+            "p(3+ wins)": np.mean(correlated_total_wins >= 3),
+        },
+    }
+).T
+
+summary
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(8, 4.5))
+x = np.arange(n_races + 1)
+width = 0.38
+
+ax.bar(
+    x - width / 2,
+    comparison["independent"],
+    width=width,
+    label="Independent races",
+    color="#4C78A8",
+)
+ax.bar(
+    x + width / 2,
+    comparison["correlated"],
+    width=width,
+    label="Correlated form",
+    color="#F58518",
+)
+
+ax.set_title("Campaign total wins")
+ax.set_xlabel("Total wins across campaign")
+ax.set_ylabel("Probability")
+ax.set_xticks(x)
+ax.legend()
+fig.tight_layout()
+```
+
+## Using the same copula in a composed model
+
+The direct copula samples above are useful when you want to inspect the joint binary
+outcomes. The same copula can also be attached to an arithmetic `MCModel`. Here the model
+is simply the sum of race wins.
+
+```{python}
+campaign_wins = race_wins[0]
+for race in race_wins[1:]:
+    campaign_wins = campaign_wins + race
+campaign_wins.name = "Campaign wins"
+
+campaign_wins.add_copula(form_copula)
+campaign_wins.summary(size=size, seed=42, threshold=2, precision=3)
+```
+
+The important point is that there is no separate outcome-specific copula API here.
+Correlated binary outcomes are just Bernoulli marginal distributions sampled through the
+same `GaussianCopula` machinery used for continuous distributions.

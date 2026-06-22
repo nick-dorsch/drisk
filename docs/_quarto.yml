@@ -29,10 +29,12 @@ website:
             text: Distribution mixtures
           - href: examples/correlated-sampling.qmd
             text: Correlated sampling with copulas
+          - href: examples/correlated-outcomes.qmd
+            text: Correlated discrete outcomes
           - href: examples/equipment-failures.qmd
             text: Equipment failures
           - href: examples/prospect-evaluation.qmd
-            text: Prospect evaluation
+            text: Oil and Gas Prospect evaluation
           - href: examples/decision-trees.qmd
             text: Decision trees
     right:
