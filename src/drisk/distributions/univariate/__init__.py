@@ -1,6 +1,7 @@
 """Univariate distribution interfaces and implementations."""
 
 from .base import UvDistribution
+from .constant import Constant
 from .continuous import (
     PERT,
     Beta,
@@ -31,6 +32,7 @@ __all__ = [
     "Bernoulli",
     "Beta",
     "Binomial",
+    "Constant",
     "Exponential",
     "Gamma",
     "Geometric",

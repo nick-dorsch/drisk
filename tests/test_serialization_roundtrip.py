@@ -19,6 +19,7 @@ def assert_model_json_round_trip(obj: BaseModel) -> None:
 @pytest.mark.parametrize(
     "dist",
     [
+        dr.Constant.elicit(5, name="constant"),
         dr.Normal.elicit(10, 20, name="normal"),
         dr.LogNormal.elicit(10, 100, name="lognormal"),
         dr.LogitNormal.elicit(0.1, 0.3, name="logitnormal"),
@@ -94,7 +95,9 @@ class CopulaHolder(BaseModel):
 @pytest.mark.parametrize(
     ("holder_cls", "value"),
     [
+        (DistributionHolder, dr.Constant.elicit(1)),
         (DistributionHolder, dr.Normal.elicit(0, 1)),
+        (UvDistributionHolder, dr.Constant.elicit(1)),
         (UvDistributionHolder, dr.Normal.elicit(0, 1)),
         (
             UvDistributionHolder,

@@ -10,6 +10,7 @@ from drisk.distributions.base import Distribution
 def concrete_distribution_types() -> tuple[type[Distribution], ...]:
     """Return all concrete distribution classes supported by Drisk."""
     from drisk.distributions.mixture import UvMixture
+    from drisk.distributions.univariate import Constant
     from drisk.distributions.univariate.continuous import (
         PERT,
         Beta,
@@ -29,6 +30,7 @@ def concrete_distribution_types() -> tuple[type[Distribution], ...]:
     )
 
     return (
+        Constant,
         Normal,
         LogNormal,
         LogitNormal,
